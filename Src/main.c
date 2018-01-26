@@ -43,7 +43,7 @@
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
-#include "stm32f4_discovery.h"
+
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -54,13 +54,16 @@
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
 char* bufftr = "Hello!\n\r";
-uint8_t buffrec[8];
+uint8_t buffrec;
+
+uint16_t duty = 0, fade=4;
 
 __IO ITStatus UartReady = RESET;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void PWM_Set_Duty(uint16_t duty_cycle);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -85,10 +88,10 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   /* Configure LED3, LED4, LED5 and LED6 */
-  BSP_LED_Init(LED3);
-  BSP_LED_Init(LED4);
-  BSP_LED_Init(LED5);
-  BSP_LED_Init(LED6);
+//  BSP_LED_Init(LED3);
+//  BSP_LED_Init(LED4);
+//  BSP_LED_Init(LED5);
+//  BSP_LED_Init(LED6);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -103,8 +106,15 @@ int main(void)
   MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_TIM2_Init();
+  MX_TIM4_Init();
 
   /* USER CODE BEGIN 2 */
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
+
+  PWM_Set_Duty(duty);
 
   /* Receive Data register not empty interrupt */
   __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
@@ -117,7 +127,28 @@ int main(void)
   while (1)
   {
 
+	  while (UartReady != SET) {
 
+	  }
+
+	  if (buffrec == 'e' && duty < 400) {
+		  duty += fade;
+	  } else if ( buffrec == 'd' && duty > 0) {
+		  duty -= fade;
+	  }
+	  PWM_Set_Duty(duty);
+
+	  uint8_t buff[2];
+	  buff[0] = duty & 0xff;
+	  buff[1] = (duty >> 8);
+	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)buff, sizeof(buff));
+	  UartReady = RESET;
+
+//	  duty += fade;
+//	  if (duty == 400 || duty ==0) {
+//		  fade=-fade;
+//	  }
+//	  HAL_Delay(50);
 	  /*##-3- Wait for the end of the transfer ###################################*/
 //	  while (UartReady != SET)
 //	  {
@@ -129,7 +160,8 @@ int main(void)
 //	  HAL_Delay(500);
 
 
-	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);
+//	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);
+
 	  /*##-3- Wait for the end of the transfer ###################################*/
 //	  while (UartReady != SET)
 //	  {
@@ -137,10 +169,10 @@ int main(void)
 	  /* Reset transmission flag */
 //	  UartReady = RESET;
 //
-	  HAL_Delay(500);
-	  BSP_LED_Off(LED6); //TX-blue
-	  BSP_LED_Off(LED4); // RX-green
-	  HAL_Delay(500);
+//	  HAL_Delay(500);
+//	  BSP_LED_Off(LED6); //TX-blue
+//	  BSP_LED_Off(LED4); // RX-green
+//	  HAL_Delay(500);
 
 
 	  //HAL_Delay(500);
@@ -161,6 +193,13 @@ int main(void)
 
 }
 
+void PWM_Set_Duty(uint16_t duty_cycle)
+{
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
+}
 /** System Clock Configuration
 */
 void SystemClock_Config(void)
@@ -196,7 +235,7 @@ void SystemClock_Config(void)
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV8;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
@@ -235,6 +274,7 @@ void _Error_Handler(char * file, int line)
   /* USER CODE END Error_Handler_Debug */ 
 }
 
+
 /**
   * @brief  Tx Transfer completed callback
   * @param  UartHandle: UART handle.
@@ -245,10 +285,10 @@ void _Error_Handler(char * file, int line)
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
   /* Set transmission flag: transfer complete */
-  UartReady = SET;
+//  UartReady = SET;
 
   /* Turn LED6 on: Transfer in transmission process is correct */
-  BSP_LED_On(LED6);
+//  BSP_LED_On(LED6);
 //  HAL_Delay(50);
 //  BSP_LED_Off(LED6);
 
@@ -265,28 +305,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
   /* Set transmission flag: transfer complete */
   UartReady = SET;
-  if (buffrec[0] == 'a' && buffrec[1] == 'b') {
-	  /* Turn LED4 on: Transfer in reception process is correct */
-	  BSP_LED_On(LED4);
-  }
+//  if (buffrec[0] == 'a' && buffrec[1] == 'b') {
+//	  /* Turn LED4 on: Transfer in reception process is correct */
+//	  BSP_LED_On(LED4);
+//  }
 
-
-}
-
-/**
-  * @brief  UART error callbacks
-  * @param  UartHandle: UART handle
-  * @note   This example shows a simple way to report transfer error, and you can
-  *         add your own implementation.
-  * @retval None
-  */
- void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
-{
-	  /* Set transmission flag: transfer complete */
-	  UartReady = SET;
-  /* Turn LED3 on: Transfer error in reception/transmission process */
-  BSP_LED_On(LED5);
-  BSP_LED_Off(LED5);
 
 }
 #ifdef USE_FULL_ASSERT
