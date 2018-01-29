@@ -39,6 +39,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_hal.h"
+#include "adc.h"
 #include "dma.h"
 #include "tim.h"
 #include "usart.h"
@@ -59,15 +60,17 @@ uint8_t buffrec;
 uint16_t duty = 0, fade=4;
 
 __IO ITStatus UartReady = RESET;
+
+//ADC value
+uint16_t adc_value[3];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void PWM_Set_Duty(uint16_t duty_cycle);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+void PWM_Set_Duty(uint16_t);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -107,6 +110,7 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
+  MX_ADC1_Init();
 
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
@@ -120,6 +124,8 @@ int main(void)
   __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
   /* Enable the UART Transmition Complete Interrupt */
   __HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
+
+  HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_value, 3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -193,13 +199,6 @@ int main(void)
 
 }
 
-void PWM_Set_Duty(uint16_t duty_cycle)
-{
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
-}
 /** System Clock Configuration
 */
 void SystemClock_Config(void)
@@ -256,25 +255,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/* USER CODE END 4 */
-
-/**
-  * @brief  This function is executed in case of error occurrence.
-  * @param  None
-  * @retval None
-  */
-void _Error_Handler(char * file, int line)
-{
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  while(1) 
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */ 
-}
-
-
 /**
   * @brief  Tx Transfer completed callback
   * @param  UartHandle: UART handle.
@@ -312,6 +292,31 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 
 
 }
+
+void PWM_Set_Duty(uint16_t duty_cycle)
+{
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
+}
+/* USER CODE END 4 */
+
+/**
+  * @brief  This function is executed in case of error occurrence.
+  * @param  None
+  * @retval None
+  */
+void _Error_Handler(char * file, int line)
+{
+  /* USER CODE BEGIN Error_Handler_Debug */
+  /* User can add his own implementation to report the HAL error return state */
+  while(1)
+  {
+  }
+  /* USER CODE END Error_Handler_Debug */ 
+}
+
 #ifdef USE_FULL_ASSERT
 
 /**
