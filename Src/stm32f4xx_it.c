@@ -36,8 +36,7 @@
 #include "stm32f4xx_it.h"
 
 /* USER CODE BEGIN 0 */
-extern char* bufftr;
-extern uint8_t buffrec[8];
+
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -110,7 +109,7 @@ void USART2_IRQHandler(void)
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
   /* USER CODE BEGIN USART2_IRQn 1 */
-  HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
+  //HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
 //  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);
   /* USER CODE END USART2_IRQn 1 */
 }

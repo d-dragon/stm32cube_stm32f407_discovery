@@ -53,11 +53,11 @@
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-UART_HandleTypeDef huart2;
-char* bufftr = "Hello!\n\r";
-uint8_t buffrec;
 
-uint16_t duty = 0, fade=4;
+char* bufftr = "Hello!\n\r";
+uint8_t buffrec = 0;
+
+uint16_t duty = 0, fade=50;
 
 __IO ITStatus UartReady = RESET;
 
@@ -121,34 +121,25 @@ int main(void)
   PWM_Set_Duty(duty);
 
   /* Receive Data register not empty interrupt */
-  __HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
+  //__HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
   /* Enable the UART Transmition Complete Interrupt */
-  __HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
-
+  //__HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
+  __HAL_UART_FLUSH_DRREGISTER(&huart2);
+  HAL_UART_Receive_DMA(&huart2, &buffrec, 1);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_value, 3);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  HAL_UART_Transmit_IT(&huart2, (uint8_t*)bufftr, 8);
   while (1)
   {
 
-	  while (UartReady != SET) {
+//	  while (UartReady != SET) {
+//
+//	  }
 
-	  }
 
-	  if (buffrec == 'e' && duty < 400) {
-		  duty += fade;
-	  } else if ( buffrec == 'd' && duty > 0) {
-		  duty -= fade;
-	  }
-	  PWM_Set_Duty(duty);
-
-	  uint8_t buff[2];
-	  buff[0] = duty & 0xff;
-	  buff[1] = (duty >> 8);
-	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)buff, sizeof(buff));
-	  UartReady = RESET;
 
 //	  duty += fade;
 //	  if (duty == 400 || duty ==0) {
@@ -271,7 +262,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 //  BSP_LED_On(LED6);
 //  HAL_Delay(50);
 //  BSP_LED_Off(LED6);
-
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 }
 
 /**
@@ -284,11 +275,28 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
   /* Set transmission flag: transfer complete */
-  UartReady = SET;
+//  UartReady = SET;
 //  if (buffrec[0] == 'a' && buffrec[1] == 'b') {
 //	  /* Turn LED4 on: Transfer in reception process is correct */
 //	  BSP_LED_On(LED4);
 //  }
+	__HAL_UART_FLUSH_DRREGISTER(&huart2); // Clear the buffer to prevent overrun
+	if (buffrec != 0) {
+			  if (buffrec == 'i' && duty < 400) {
+			     duty += fade;
+			  } else if ( buffrec == 'd' && duty > 0) {
+			  		  duty -= fade;
+			  }
+		  PWM_Set_Duty(duty);
+
+			  	  uint8_t buff[2];
+			  	  buff[0] = duty & 0xff;
+			  	  buff[1] = (duty >> 8);
+			  	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)buff, sizeof(buff));
+//			  	  UartReady = RESET;
+
+	//		  	  buffrec = 0;
+		  }
 
 
 }
