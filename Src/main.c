@@ -46,20 +46,42 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "message_parser.h"
+#include "stm32f4xx_it.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+extern DMA_HandleTypeDef hdma_usart2_rx;
 /* Private variables ---------------------------------------------------------*/
+#define RECV_BUFF_SIZE 64
+#define SEND_BUFF_SIZE 64
 
 char* bufftr = "Hello!\n\r";
 uint8_t buffrec = 0;
+uint8_t rxbuff[RECV_BUFF_SIZE];
+uint8_t rxbuff_idx = 0;
+__IO ITStatus UartReady = RESET;
 
+
+MatLab_Message_TypeDef matlab_msg;
+
+/* DMA Timeout event structure
+ * Note: prevCNDTR initial value must be set to maximum size of DMA buffer!
+*/
+DMA_Event_t dma_uart_rx = {0,0,DMA_BUF_SIZE};
+
+uint8_t dma_rx_buf[DMA_BUF_SIZE];       /* Circular buffer for DMA */
+uint8_t data[DMA_BUF_SIZE] = {'\0'};    /* Data buffer that contains newly received data */
+
+
+
+/* ADC variables */
 uint16_t duty = 0, fade=50;
 
-__IO ITStatus UartReady = RESET;
+
 
 //ADC value
 uint16_t adc_value[3];
@@ -71,6 +93,8 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void PWM_Set_Duty(uint16_t);
+
+void DMA_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -107,6 +131,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+
+  DMA_Init();
+
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
@@ -125,7 +152,15 @@ int main(void)
   /* Enable the UART Transmition Complete Interrupt */
   //__HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
   __HAL_UART_FLUSH_DRREGISTER(&huart2);
-  HAL_UART_Receive_DMA(&huart2, &buffrec, 1);
+  if (HAL_UART_Receive_DMA(&huart2, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+  {
+
+  }
+  /* Disable Half Transfer Interrupt */
+ // __HAL_DMA_DISABLE_IT(huart2.hdmarx, DMA_IT_HT);
+
+
+  /* ADC code */
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_value, 3);
   /* USER CODE END 2 */
 
@@ -134,11 +169,16 @@ int main(void)
   HAL_UART_Transmit_IT(&huart2, (uint8_t*)bufftr, 8);
   while (1)
   {
-
+	  if (rxbuff_idx > 0) {
+		  HAL_UART_Transmit_IT(&huart2, (uint8_t*)rxbuff, rxbuff_idx);
+		  rxbuff_idx = 0;
+	  }
+	  HAL_Delay(1000);
 //	  while (UartReady != SET) {
 //
 //	  }
 
+	  /* Check receive buffer for processing command */
 
 
 //	  duty += fade;
@@ -246,6 +286,34 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+/* DMA Configuration */
+void DMA_Init(void)
+{
+    __HAL_RCC_DMA1_CLK_ENABLE();
+
+    hdma_usart2_rx.Instance = DMA1_Stream5;
+    //hdma_usart2_rx.Init.Request = DMA_REQUEST_2;
+    hdma_usart2_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
+    hdma_usart2_rx.Init.PeriphInc = DMA_PINC_DISABLE;
+    hdma_usart2_rx.Init.MemInc = DMA_MINC_ENABLE;
+    hdma_usart2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+    hdma_usart2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+    hdma_usart2_rx.Init.Mode = DMA_CIRCULAR;
+    hdma_usart2_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    if(HAL_DMA_Init(&hdma_usart2_rx) != HAL_OK)
+    {
+        Error_Handler();
+    }
+
+    __HAL_LINKDMA(&huart2,hdmarx, hdma_usart2_rx);
+
+    /* DMA Interrupt Configuration */
+    HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+}
+
+
 /**
   * @brief  Tx Transfer completed callback
   * @param  UartHandle: UART handle.
@@ -262,7 +330,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 //  BSP_LED_On(LED6);
 //  HAL_Delay(50);
 //  BSP_LED_Off(LED6);
-	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	//__HAL_UART_FLUSH_DRREGISTER(&huart2);
 }
 
 /**
@@ -280,25 +348,75 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 //	  /* Turn LED4 on: Transfer in reception process is correct */
 //	  BSP_LED_On(LED4);
 //  }
-	__HAL_UART_FLUSH_DRREGISTER(&huart2); // Clear the buffer to prevent overrun
-	if (buffrec != 0) {
-			  if (buffrec == 'i' && duty < 400) {
-			     duty += fade;
-			  } else if ( buffrec == 'd' && duty > 0) {
-			  		  duty -= fade;
-			  }
-		  PWM_Set_Duty(duty);
+//	__HAL_UART_FLUSH_DRREGISTER(&huart2); // Clear the buffer to prevent overrun
+//	if (rxbuff_idx == RECV_BUFF_SIZE) {
+//		rxbuff_idx = 0; //buffer overflow
+//	}
+//	rxbuff[rxbuff_idx] = buffrec;
+//	rxbuff_idx++;
 
-			  	  uint8_t buff[2];
-			  	  buff[0] = duty & 0xff;
-			  	  buff[1] = (duty >> 8);
-			  	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)buff, sizeof(buff));
-//			  	  UartReady = RESET;
+	//HAL_UART_Transmit_IT(&huart2, &buffrec, 1);
 
-	//		  	  buffrec = 0;
-		  }
+//	if (buffrec != 0) {
+//			  if (buffrec == 'i' && duty < 400) {
+//			     duty += fade;
+//			  } else if ( buffrec == 'd' && duty > 0) {
+//			  		  duty -= fade;
+//			  }
+//		  PWM_Set_Duty(duty);
+//
+//			  	  uint8_t buff[2];
+//			  	  buff[0] = duty & 0xff;
+//			  	  buff[1] = (duty >> 8);
+//			  	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)buff, sizeof(buff));
+////			  	  UartReady = RESET;
+//
+//	//		  	  buffrec = 0;
+//		  }
 
 
+
+	/* *****************************************************************
+	 * DMA with Timeout Event
+	 * ****************************************************************
+	 */
+
+	uint16_t i, pos, start, length;
+	uint16_t currCNDTR = __HAL_DMA_GET_COUNTER(UartHandle->hdmarx);
+
+	/* Ignore IDLE Timeout when the received characters exactly filled up the DMA buffer and DMA Rx Complete IT is generated, but there is no new character during timeout */
+	if (dma_uart_rx.flag && currCNDTR == DMA_BUF_SIZE) {
+		dma_uart_rx.flag = 0;
+		return;
+	}
+
+	/* Determine start position in DMA buffer based on previous CNDTR value */
+	start = (dma_uart_rx.prevCNDTR < DMA_BUF_SIZE) ?
+			(DMA_BUF_SIZE - dma_uart_rx.prevCNDTR) : 0;
+
+	if (dma_uart_rx.flag) /* Timeout event */
+	{
+		/* Determine new data length based on previous DMA_CNDTR value:
+		 *  If previous CNDTR is less than DMA buffer size: there is old data in DMA buffer (from previous timeout) that has to be ignored.
+		 *  If CNDTR == DMA buffer size: entire buffer content is new and has to be processed.
+		 */
+		length =
+				(dma_uart_rx.prevCNDTR < DMA_BUF_SIZE) ?
+						(dma_uart_rx.prevCNDTR - currCNDTR) :
+						(DMA_BUF_SIZE - currCNDTR);
+		dma_uart_rx.prevCNDTR = currCNDTR;
+		dma_uart_rx.flag = 0;
+	} else /* DMA Rx Complete event */
+	{
+		length = DMA_BUF_SIZE - start;
+		dma_uart_rx.prevCNDTR = DMA_BUF_SIZE;
+	}
+
+	/* Copy and Process new data */
+	for (i = 0, pos = start; i < length; ++i, ++pos) {
+		data[i] = dma_rx_buf[pos];
+	}
+	HAL_UART_Transmit_IT(&huart2, data, length);
 }
 
 void PWM_Set_Duty(uint16_t duty_cycle)
@@ -308,6 +426,9 @@ void PWM_Set_Duty(uint16_t duty_cycle)
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
 }
+
+
+
 /* USER CODE END 4 */
 
 /**
@@ -324,6 +445,8 @@ void _Error_Handler(char * file, int line)
   }
   /* USER CODE END Error_Handler_Debug */ 
 }
+
+
 
 #ifdef USE_FULL_ASSERT
 

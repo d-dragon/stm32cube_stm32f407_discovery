@@ -36,7 +36,8 @@
 #include "stm32f4xx_it.h"
 
 /* USER CODE BEGIN 0 */
-
+#define DMA_TIMEOUT_MS      1      /* DMA Timeout duration in msec */
+extern DMA_Event_t dma_uart_rx;
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -60,7 +61,15 @@ void SysTick_Handler(void)
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+  /* DMA timer */
+  if (dma_uart_rx.timer == 1) {
+	  /* DMA Timeout event: set Timeout Flag and call DMA Rx Complete Callback */
+	  dma_uart_rx.flag = 1;
+	  hdma_usart2_rx.XferCpltCallback(&hdma_usart2_rx);
+  }
+  if (dma_uart_rx.timer) {
+	  --dma_uart_rx.timer;
+  }
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -108,6 +117,13 @@ void USART2_IRQHandler(void)
 
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
+    /* UART IDLE Interrupt */
+	if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
+		__HAL_UART_CLEAR_IDLEFLAG(&huart2);
+		//USART2->ICR = UART_CLEAR_IDLEF;
+		/* Start DMA timer */
+		dma_uart_rx.timer = DMA_TIMEOUT_MS;
+	}
   /* USER CODE BEGIN USART2_IRQn 1 */
   //HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
 //  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);

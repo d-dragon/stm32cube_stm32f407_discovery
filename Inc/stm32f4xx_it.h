@@ -53,6 +53,16 @@ void ADC_IRQHandler(void);
 void USART2_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 
+/* USER CODE BEGIN typedef */
+/* Type definitions ----------------------------------------------------------*/
+typedef struct
+{
+    volatile uint8_t  flag;     /* Timeout event flag */
+    uint16_t timer;             /* Timeout duration in msec */
+    uint16_t prevCNDTR;         /* Holds previous value of DMA_CNDTR */
+} DMA_Event_t;
+/* USER CODE END typedef */
+
 #ifdef __cplusplus
 }
 #endif

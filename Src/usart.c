@@ -68,6 +68,13 @@ void MX_USART2_UART_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
+  /* USER CODE BEGIN USART2_Init */
+  /* UART2 IDLE Interrupt Configuration */
+  SET_BIT(USART2->CR1, USART_CR1_IDLEIE);
+  HAL_NVIC_SetPriority(USART2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART2_IRQn);
+  /* USER CODE END USART2_Init */
+
 }
 
 void HAL_UART_MspInit(UART_HandleTypeDef* uartHandle)
