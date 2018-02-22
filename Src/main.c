@@ -48,6 +48,7 @@
 /* USER CODE BEGIN Includes */
 #include "message_parser.h"
 #include "stm32f4xx_it.h"
+#include "stm32f4_discovery.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -63,7 +64,8 @@ char* bufftr = "Hello!\n\r";
 uint8_t buffrec = 0;
 uint8_t rxbuff[RECV_BUFF_SIZE];
 uint8_t rxbuff_idx = 0;
-__IO ITStatus UartReady = RESET;
+//__IO ITStatus UartReady = RESET;
+__IO ITStatus recv_msg_flag = RESET;
 
 
 MatLab_Message_TypeDef matlab_msg;
@@ -75,7 +77,7 @@ DMA_Event_t dma_uart_rx = {0,0,DMA_BUF_SIZE};
 
 uint8_t dma_rx_buf[DMA_BUF_SIZE];       /* Circular buffer for DMA */
 uint8_t data[DMA_BUF_SIZE] = {'\0'};    /* Data buffer that contains newly received data */
-
+uint16_t data_len = 0;
 
 
 /* ADC variables */
@@ -113,13 +115,7 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
-  /* USER CODE BEGIN Init */
-  /* Configure LED3, LED4, LED5 and LED6 */
-//  BSP_LED_Init(LED3);
-//  BSP_LED_Init(LED4);
-//  BSP_LED_Init(LED5);
-//  BSP_LED_Init(LED6);
-  /* USER CODE END Init */
+
 
   /* Configure the system clock */
   SystemClock_Config();
@@ -139,6 +135,14 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
 
+  /* USER CODE BEGIN Init */
+  /* Configure LED3, LED4, LED5 and LED6 */
+  BSP_LED_Init(LED3);
+  BSP_LED_Init(LED4);
+  BSP_LED_Init(LED5);
+  BSP_LED_Init(LED6);
+
+  /* USER CODE END Init */
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
@@ -167,13 +171,17 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   HAL_UART_Transmit_IT(&huart2, (uint8_t*)bufftr, 8);
+  BSP_LED_Toggle(LED6); //TX-blue
   while (1)
   {
-	  if (rxbuff_idx > 0) {
-		  HAL_UART_Transmit_IT(&huart2, (uint8_t*)rxbuff, rxbuff_idx);
-		  rxbuff_idx = 0;
+	  if (recv_msg_flag == SET) {
+		  BSP_LED_Toggle(LED4); // green
+		  HAL_UART_Transmit_IT(&huart2, data, data_len); //echo
+
+		  recv_msg_flag = RESET;
 	  }
-	  HAL_Delay(1000);
+
+
 //	  while (UartReady != SET) {
 //
 //	  }
@@ -416,7 +424,16 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 	for (i = 0, pos = start; i < length; ++i, ++pos) {
 		data[i] = dma_rx_buf[pos];
 	}
-	HAL_UART_Transmit_IT(&huart2, data, length);
+	data_len = length;
+	recv_msg_flag = SET;
+
+//	uint8_t err;
+//	matlab_msg = MatLab_Message_Parser(data, length, &err);
+//	HAL_UART_Transmit_IT(&huart2, &(matlab_msg.len), 1);
+//	HAL_UART_Transmit_IT(&huart2, matlab_msg.payload, 2);
+
+
+//	HAL_UART_Transmit_IT(&huart2, data, length);
 }
 
 void PWM_Set_Duty(uint16_t duty_cycle)
