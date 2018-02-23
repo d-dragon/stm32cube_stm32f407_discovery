@@ -61,11 +61,12 @@ extern DMA_HandleTypeDef hdma_usart2_rx;
 #define SEND_BUFF_SIZE 64
 
 char* bufftr = "Hello!\n\r";
+char* resp_msg_err = "invalid_message!\n\r";
 uint8_t buffrec = 0;
 uint8_t rxbuff[RECV_BUFF_SIZE];
 uint8_t rxbuff_idx = 0;
 //__IO ITStatus UartReady = RESET;
-__IO ITStatus recv_msg_flag = RESET;
+__IO ITStatus recv_msg_flag = RESET; //declare volatile so that the variable could be changed in interrupt
 
 
 MatLab_Message_TypeDef matlab_msg;
@@ -95,7 +96,7 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void PWM_Set_Duty(uint16_t);
-
+void MATLAB_Message_Handler(uint8_t *serial_data, uint8_t data_len);
 void DMA_Init(void);
 /* USER CODE END PFP */
 
@@ -176,7 +177,9 @@ int main(void)
   {
 	  if (recv_msg_flag == SET) {
 		  BSP_LED_Toggle(LED4); // green
-		  HAL_UART_Transmit_IT(&huart2, data, data_len); //echo
+		  MATLAB_Message_Handler(data, data_len);
+//		  HAL_UART_Transmit(&huart2, data, data_len, 5); //echo
+//		  HAL_UART_Transmit(&huart2, (uint8_t*)bufftr, 8, 5);
 
 		  recv_msg_flag = RESET;
 	  }
@@ -338,7 +341,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 //  BSP_LED_On(LED6);
 //  HAL_Delay(50);
 //  BSP_LED_Off(LED6);
-	//__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 }
 
 /**
@@ -444,6 +447,46 @@ void PWM_Set_Duty(uint16_t duty_cycle)
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
 }
 
+void MATLAB_Message_Handler(uint8_t *serial_data, uint8_t data_len) {
+//	MatLab_Message_TypeDef mat_msg;
+
+	uint8_t msg_len = serial_data[0];
+	uint8_t msg_type = serial_data[1];
+	uint8_t i;
+//	mat_msg.crc[0] = serial_data[msg_len - 2];
+//	mat_msg.crc[1] = serial_data[msg_len - 1];
+
+	/********* Validate CRC  **********/
+
+
+	/**********************************/
+
+	/*********validate message format*********/
+	if (msg_len != (data_len - 1 - 2)) {
+		HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
+		return;
+	}
+
+	/*****************************************/
+
+	uint8_t payload_len = msg_len - 1;
+	uint8_t payload[payload_len];
+	for (i = 0; i < payload_len; i++) {
+		payload[i] = serial_data[i + 2]; // exclude message length and type byte
+	}
+
+	/* Execute command */
+
+
+
+	HAL_UART_Transmit(&huart2, (uint8_t *)payload, payload_len, 5);
+//	mat_msg.len = payload_len;
+//	mat_msg.cmd_type = serial_data[1];
+//	mat_msg.payload = (uint8_t *)payload;
+//	HAL_UART_Transmit_IT(&huart2, (uint8_t *)mat_msg.payload, 2);
+
+
+}
 
 
 /* USER CODE END 4 */
