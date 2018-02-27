@@ -46,7 +46,7 @@
 #include "gpio.h"
 
 /* USER CODE BEGIN Includes */
-#include "message_parser.h"
+#include "message_util.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4_discovery.h"
 /* USER CODE END Includes */
@@ -61,11 +61,12 @@ extern DMA_HandleTypeDef hdma_usart2_rx;
 #define SEND_BUFF_SIZE 64
 
 char* bufftr = "Hello!\n\r";
+char* resp_msg_err = "invalid_message!\n\r";
 uint8_t buffrec = 0;
 uint8_t rxbuff[RECV_BUFF_SIZE];
 uint8_t rxbuff_idx = 0;
 //__IO ITStatus UartReady = RESET;
-__IO ITStatus recv_msg_flag = RESET;
+__IO ITStatus recv_msg_flag = RESET; //declare volatile so that the variable could be changed in interrupt
 
 
 MatLab_Message_TypeDef matlab_msg;
@@ -95,7 +96,6 @@ void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
 void PWM_Set_Duty(uint16_t);
-
 void DMA_Init(void);
 /* USER CODE END PFP */
 
@@ -176,7 +176,19 @@ int main(void)
   {
 	  if (recv_msg_flag == SET) {
 		  BSP_LED_Toggle(LED4); // green
-		  HAL_UART_Transmit_IT(&huart2, data, data_len); //echo
+
+		  uint8_t err;
+		  MatLab_Message_TypeDef req;
+		  err = MatLab_Message_Parser(&req, data, data_len);
+
+		  if (err == MSG_PARSER_SUCCESS) {
+			  HAL_UART_Transmit(&huart2, req.payload.data, req.payload.len, 5);
+		  } else {
+			  HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
+		  }
+//		  MATLAB_Message_Handler(data, data_len);
+//		  HAL_UART_Transmit(&huart2, data, data_len, 5); //echo
+//		  HAL_UART_Transmit(&huart2, (uint8_t*)bufftr, 8, 5);
 
 		  recv_msg_flag = RESET;
 	  }
@@ -338,7 +350,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 //  BSP_LED_On(LED6);
 //  HAL_Delay(50);
 //  BSP_LED_Off(LED6);
-	//__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	__HAL_UART_FLUSH_DRREGISTER(&huart2);
 }
 
 /**
