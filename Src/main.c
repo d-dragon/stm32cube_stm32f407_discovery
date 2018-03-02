@@ -97,6 +97,8 @@ void SystemClock_Config(void);
 /* Private function prototypes -----------------------------------------------*/
 void PWM_Set_Duty(uint16_t);
 void DMA_Init(void);
+void HandleMessage(MatLab_Message_TypeDef ml_msg);
+void Set_PWM(uint8_t *data, uint8_t len);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -137,9 +139,9 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   /* Configure LED3, LED4, LED5 and LED6 */
-  BSP_LED_Init(LED3);
+//  BSP_LED_Init(LED3);
   BSP_LED_Init(LED4);
-  BSP_LED_Init(LED5);
+//  BSP_LED_Init(LED5);
   BSP_LED_Init(LED6);
 
   /* USER CODE END Init */
@@ -178,11 +180,11 @@ int main(void)
 		  BSP_LED_Toggle(LED4); // green
 
 		  uint8_t err;
-		  MatLab_Message_TypeDef req;
-		  err = MatLab_Message_Parser(&req, data, data_len);
+		  MatLab_Message_TypeDef msg;
+		  err = MatLab_Message_Parser(&msg, data, data_len);
 
 		  if (err == MSG_PARSER_SUCCESS) {
-			  HAL_UART_Transmit(&huart2, req.payload.data, req.payload.len, 5);
+			  HandleMessage(msg);
 		  } else {
 			  HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
 		  }
@@ -457,7 +459,38 @@ void PWM_Set_Duty(uint16_t duty_cycle)
 }
 
 
+void HandleMessage(MatLab_Message_TypeDef ml_msg) {
+	switch (ml_msg.cmd_type) {
+	case MATLAB_CMD_SEND_PARAM:
+		/* TODO - Call SendParam function */
+		break;
+	case MATLAB_CMD_GET_POS:
+		/* TODO - Call GetPos function */
+	case MATLAB_CMD_RESTART:
+		/* TODO - Call Soft reset function */
+		break;
+	case MATLAB_CMD_SET_PWM:
+		Set_PWM(ml_msg.payload.data, ml_msg.payload.len);
+		break;
+	default:
+		HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
+	}
+}
 
+void Set_PWM(uint8_t *data, uint8_t len) {
+	/* Extract data and calculate PWM value */
+	uint16_t duty = 0;
+	duty = (uint16_t) data[0];
+
+	PWM_Set_Duty(duty);
+
+	/****************************************/
+
+	/* Respond result by calling Send_Response_Message*/
+
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, data, len);
+
+}
 /* USER CODE END 4 */
 
 /**

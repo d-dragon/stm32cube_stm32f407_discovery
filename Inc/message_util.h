@@ -1,27 +1,27 @@
-#ifndef __MESSAGE_PARSER_H
-#define __MESSAGE_PARSER_H
+#ifndef __MESSAGE_UTIL_H
+#define __MESSAGE_UTIL_H
 
 #include <stdint.h>
 
 /* Configuration **************************************************************/
 #define DMA_BUF_SIZE        64      /* DMA circular buffer size in bytes */
+#define MSG_LEN_BYTE		1
+#define MSG_TYPE_LEN		1
+#define MSG_CRC_LEN			2
 
+#define MSG_LEN_IDX			0
+#define MSG_TYPE_IDX		1
+#define MSG_PAYLOAD_IDX		2
 
 typedef enum {
 	MATLAB_CMD_REPLY = 0,
 	MATLAB_CMD_RESTART,
 	MATLAB_CMD_SEND_PARAM,
+	MATLAB_CMD_SET_PWM,
+	MATLAB_CMD_GET_ADC,
 	MATLAB_CMD_GET_POS,
 	MATLAB_CMD_REP_POS
 }MatLab_Cmd_Type;
-
-//typedef enum {
-//	MSG_TRANSMIT_START = 0,
-//	MSG_TRANSMIT_CMD_TYPE,
-//	MSG_TRANSMIT_PAYLOAD,
-//	MSG_TRANSMIT_CRC,
-//	MSG_TRANSMIT_IDLE
-//}Message_Transmit_State;
 
 typedef enum {
 	MSG_PARSER_SUCCESS = 0,
@@ -44,4 +44,6 @@ typedef struct {
 } MatLab_Message_TypeDef;
 
 uint8_t MatLab_Message_Parser(MatLab_Message_TypeDef *ml_msg, uint8_t *serial_data, uint8_t data_len);
+
+uint8_t MatLab_Send_Response(uint8_t msg_type, uint8_t *payload, uint8_t payload_len);
 #endif

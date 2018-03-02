@@ -31,20 +31,6 @@ uint8_t MatLab_Message_Parser(MatLab_Message_TypeDef *ml_msg, uint8_t *serial_da
 
 	/*****************************************/
 
-	switch (ml_msg->cmd_type) {
-	case MATLAB_CMD_SEND_PARAM:
-		/* TODO - Call SendParam function */
-		break;
-	case MATLAB_CMD_GET_POS:
-		/* TODO - Call GetPos function */
-	case MATLAB_CMD_RESTART:
-		/* TODO - Call Soft reset function */
-		break;
-	default:
-		err = MSG_PARSER_INVALID_CMD;
-//		HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
-		return err;
-	}
 	/* Execute command */
 
 
@@ -57,4 +43,24 @@ uint8_t MatLab_Message_Parser(MatLab_Message_TypeDef *ml_msg, uint8_t *serial_da
 //	HAL_UART_Transmit_IT(&huart2, (uint8_t *)mat_msg.payload, 2);
 
 
+}
+
+uint8_t MatLab_Send_Response(uint8_t msg_type, uint8_t *payload, uint8_t payload_len) {
+
+	uint8_t msg_len = MSG_LEN_BYTE + MSG_TYPE_LEN + MSG_CRC_LEN + payload_len;
+	uint8_t res_msg[msg_len];
+	uint8_t i;
+
+	res_msg[MSG_LEN_IDX] = MSG_TYPE_LEN + payload_len;
+	res_msg[MSG_TYPE_IDX] = msg_type;
+	for(i = 0; i < payload_len; i++) {
+		res_msg[MSG_PAYLOAD_IDX + i] = payload[i];
+	}
+
+	/* Add CRC to response message */
+
+	/*******************************/
+
+	HAL_UART_Transmit(&huart2, res_msg, msg_len, 5);
+	return 0;
 }
