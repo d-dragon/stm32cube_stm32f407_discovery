@@ -45,6 +45,8 @@
 #include "usart.h"
 #include "gpio.h"
 
+#include "arm_math.h"
+
 /* USER CODE BEGIN Includes */
 #include "message_util.h"
 #include "stm32f4xx_it.h"
@@ -54,6 +56,8 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+
 
 extern DMA_HandleTypeDef hdma_usart2_rx;
 /* Private variables ---------------------------------------------------------*/
@@ -478,8 +482,20 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 }
 
 void Set_PWM(uint8_t *data, uint8_t len) {
-	/* Extract data and calculate PWM value */
-	uint16_t duty = 0;
+	/* Read data and calculate PWM value */
+	float32_t k_p, k_i, k_d, result_f;
+
+	k_p = 1.4;
+	k_i = 1.3;
+	k_d = 2.1;
+
+	result_f = k_p + k_i + k_d;
+
+	if (result_f != 4.8) {
+		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, data, len);
+	}
+
+	uint16_t duty;
 	duty = (uint16_t) data[0];
 
 	PWM_Set_Duty(duty);

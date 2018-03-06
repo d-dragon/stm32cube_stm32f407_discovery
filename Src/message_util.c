@@ -51,10 +51,10 @@ uint8_t MatLab_Send_Response(uint8_t msg_type, uint8_t *payload, uint8_t payload
 	uint8_t res_msg[msg_len];
 	uint8_t i;
 
-	res_msg[MSG_LEN_IDX] = MSG_TYPE_LEN + payload_len;
-	res_msg[MSG_TYPE_IDX] = msg_type;
+	res_msg[MSG_LEN_POS] = MSG_TYPE_LEN + payload_len;
+	res_msg[MSG_TYPE_POS] = msg_type;
 	for(i = 0; i < payload_len; i++) {
-		res_msg[MSG_PAYLOAD_IDX + i] = payload[i];
+		res_msg[MSG_PAYLOAD_POS + i] = payload[i];
 	}
 
 	/* Add CRC to response message */

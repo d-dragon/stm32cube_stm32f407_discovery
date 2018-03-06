@@ -9,9 +9,9 @@
 #define MSG_TYPE_LEN		1
 #define MSG_CRC_LEN			2
 
-#define MSG_LEN_IDX			0
-#define MSG_TYPE_IDX		1
-#define MSG_PAYLOAD_IDX		2
+#define MSG_LEN_POS			0
+#define MSG_TYPE_POS		1
+#define MSG_PAYLOAD_POS		2
 
 typedef enum {
 	MATLAB_CMD_REPLY = 0,
