@@ -57,7 +57,13 @@
 
 /* USER CODE BEGIN PV */
 
+#define SAMPLES	512 /* 256 real party and 256 imaginary parts */
+#define FFT_SIZE	SAMPLES / 2	/* FFT size is always the same size as we have samples, so 256 in our case */
 
+float32_t Input[SAMPLES];
+float32_t Output[FFT_SIZE];
+float32_t maxValue;
+uint32_t maxIndex;
 
 extern DMA_HandleTypeDef hdma_usart2_rx;
 /* Private variables ---------------------------------------------------------*/
@@ -180,6 +186,8 @@ int main(void)
   BSP_LED_Toggle(LED6); //TX-blue
   while (1)
   {
+	  arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
+	  arm_max_f32(Output, FFT_SIZE, &maxValue, &maxIndex);
 	  if (recv_msg_flag == SET) {
 		  BSP_LED_Toggle(LED4); // green
 
@@ -484,14 +492,15 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 void Set_PWM(uint8_t *data, uint8_t len) {
 	/* Read data and calculate PWM value */
 	float32_t k_p, k_i, k_d, result_f;
-
-	k_p = 1.4;
-	k_i = 1.3;
-	k_d = 2.1;
+	float32_t data_f;
+	data_f = *(float32_t*) data; // f.e. 1.123 -> data = 77 be 8f 3f
+	k_p = 1.42f;
+	k_i = 1.33f;
+	k_d = 2.01f;
 
 	result_f = k_p + k_i + k_d;
 
-	if (result_f != 4.8) {
+	if (result_f == 4.76f) {
 		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, data, len);
 	}
 
