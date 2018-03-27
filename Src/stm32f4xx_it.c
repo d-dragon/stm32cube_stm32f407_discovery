@@ -114,16 +114,16 @@ void ADC_IRQHandler(void)
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-
+	HAL_UART_IRQHandler(&huart2);
+	    /* UART IDLE Interrupt */
+		if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
+			__HAL_UART_CLEAR_IDLEFLAG(&huart2);
+			//USART2->ICR = UART_CLEAR_IDLEF;
+			/* Start DMA timer */
+			dma_uart_rx.timer = DMA_TIMEOUT_MS;
+		}
   /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
-    /* UART IDLE Interrupt */
-	if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
-		__HAL_UART_CLEAR_IDLEFLAG(&huart2);
-		//USART2->ICR = UART_CLEAR_IDLEF;
-		/* Start DMA timer */
-		dma_uart_rx.timer = DMA_TIMEOUT_MS;
-	}
+
   /* USER CODE BEGIN USART2_IRQn 1 */
   //HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
 //  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);

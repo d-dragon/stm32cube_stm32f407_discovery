@@ -456,6 +456,13 @@ void HAL_GPIO_TogglePin(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
   GPIOx->ODR ^= GPIO_Pin;
 }
 
+uint16_t HAL_GPIO_ReadPort(GPIO_TypeDef* GPIOx)
+{
+
+  uint16_t value = GPIOx->IDR;
+  return value;
+}
+
 /**
   * @brief  Locks GPIO Pins configuration registers.
   * @note   The locked registers are GPIOx_MODER, GPIOx_OTYPER, GPIOx_OSPEEDR,

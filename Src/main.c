@@ -109,6 +109,7 @@ void PWM_Set_Duty(uint16_t);
 void DMA_Init(void);
 void HandleMessage(MatLab_Message_TypeDef ml_msg);
 void Set_PWM(uint8_t *data, uint8_t len);
+uint8_t Get_Position();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -189,7 +190,7 @@ int main(void)
 	  arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
 	  arm_max_f32(Output, FFT_SIZE, &maxValue, &maxIndex);
 	  if (recv_msg_flag == SET) {
-		  BSP_LED_Toggle(LED4); // green
+//		  BSP_LED_Toggle(LED4); // green
 
 		  uint8_t err;
 		  MatLab_Message_TypeDef msg;
@@ -478,6 +479,8 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 		break;
 	case MATLAB_CMD_GET_POS:
 		/* TODO - Call GetPos function */
+		Get_Position();
+		break;
 	case MATLAB_CMD_RESTART:
 		/* TODO - Call Soft reset function */
 		break;
@@ -487,6 +490,49 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 	default:
 		HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
 	}
+}
+
+uint8_t Get_Position()
+{
+	uint8_t pos = 0;
+
+	uint8_t pin_d_8, pin_d_9, pin_d_10, pin_d_11;
+	uint8_t pin_b_12, pin_b_13, pin_b_14, pin_b_15;
+//	if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_8)) {
+//		BSP_LED_Toggle(LED6);
+//	} else {
+//		BSP_LED_Toggle(LED4);
+//	}
+	//word 1
+	pin_d_8 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_8);
+	pin_d_9 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_9);
+	pin_d_10 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_10);
+	pin_d_11 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_11);
+	pos = pin_d_8 | (pin_d_9 << 1) | (pin_d_10 << 2) | (pin_d_11 << 3);
+
+	//word 2
+	pin_b_12 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12);
+	pin_b_13 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13);
+	pin_b_14 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
+	pin_b_15 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15);
+
+	pos = pos | (pin_b_12 << 4) | (pin_b_13 << 5) | (pin_b_14 << 6) | (pin_b_15 << 7);
+
+	uint8_t pin_values[8];
+	pin_values[0] = pin_d_8;
+	pin_values[1] = pin_d_9;
+	pin_values[2] = pin_d_10;
+	pin_values[3] = pin_d_11;
+	pin_values[4] = pin_b_12;
+	pin_values[5] = pin_b_13;
+	pin_values[6] = pin_b_14;
+	pin_values[7] = pin_b_15;
+
+	uint16_t port_value = HAL_GPIO_ReadPort(GPIOB);
+	port_value = port_value >> 8;
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t*)&port_value, 1);
+//	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
+	return pos;
 }
 
 void Set_PWM(uint8_t *data, uint8_t len) {
@@ -505,7 +551,8 @@ void Set_PWM(uint8_t *data, uint8_t len) {
 	}
 
 	uint16_t duty;
-	duty = (uint16_t) data[0];
+	duty = (uint16_t) data[0] + 145; // step=400
+
 
 	PWM_Set_Duty(duty);
 
