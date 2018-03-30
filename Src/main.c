@@ -536,31 +536,45 @@ uint8_t Get_Position()
 }
 
 void Set_PWM(uint8_t *data, uint8_t len) {
-	/* Read data and calculate PWM value */
-	float32_t k_p, k_i, k_d, result_f;
-	float32_t data_f;
-	data_f = *(float32_t*) data; // f.e. 1.123 -> data = 77 be 8f 3f
-	k_p = 1.42f;
-	k_i = 1.33f;
-	k_d = 2.01f;
 
+	/***************************************
+
+	 data map = [0] [1] | [2].....[5] | [6].....[9] | [10]...[13]
+			    tag_pul |     k_p	  |     k_i	    |     k_d
+			ex:  10 00  | 77 BE 8F 3F | 44 8B 54 40 | 08 AC 7C 3F
+	tag_pul = 9
+	k_p = 1.123 (0x3f8fbe77)
+	k_i = 3.321 (0x40548b44)
+	k_d = 0.987 (0x3f7cac08)
+
+	*************************************/
+
+	float32_t k_p, k_i, k_d, result_f;
+	uint16_t tag_pul = 0;
+	uint16_t duty_cycle;
+
+	tag_pul = data[1];
+	tag_pul = tag_pul << 8;
+	tag_pul |= data[0];
+
+
+	k_p = *(float32_t*) (data + 2); // f.e. 1.123 -> data = 77 be 8f 3f
+	k_i = *(float32_t*) (data + 6);
+	k_d = *(float32_t*) (data + 10);
 	result_f = k_p + k_i + k_d;
 
-	if (result_f == 4.76f) {
-		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, data, len);
+	duty_cycle = (uint16_t)(result_f * (float32_t)tag_pul);
+
+	if (duty_cycle > 255) {
+		duty_cycle = 255;
 	}
-
-	uint16_t duty;
-	duty = (uint16_t) data[0] + 145; // step=400
-
-
-	PWM_Set_Duty(duty);
+	PWM_Set_Duty(duty_cycle);
 
 	/****************************************/
 
 	/* Respond result by calling Send_Response_Message*/
 
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, data, len);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_RUN_ERROR, 1);
 
 }
 /* USER CODE END 4 */
