@@ -45,9 +45,8 @@
 #include "usart.h"
 #include "gpio.h"
 
-#include "arm_math.h"
-
 /* USER CODE BEGIN Includes */
+#include "arm_math.h"
 #include "message_util.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4_discovery.h"
@@ -128,7 +127,14 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
+  /* USER CODE BEGIN Init */
+  /* Configure LED3, LED4, LED5 and LED6 */
+//  BSP_LED_Init(LED3);
+  BSP_LED_Init(LED4);
+//  BSP_LED_Init(LED5);
+  BSP_LED_Init(LED6);
 
+  /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
@@ -140,22 +146,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-
-  DMA_Init();
-
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
+  MX_USART3_UART_Init();
 
-  /* USER CODE BEGIN Init */
-  /* Configure LED3, LED4, LED5 and LED6 */
-//  BSP_LED_Init(LED3);
-  BSP_LED_Init(LED4);
-//  BSP_LED_Init(LED5);
-  BSP_LED_Init(LED6);
-
-  /* USER CODE END Init */
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
@@ -593,8 +589,6 @@ void _Error_Handler(char * file, int line)
   }
   /* USER CODE END Error_Handler_Debug */ 
 }
-
-
 
 #ifdef USE_FULL_ASSERT
 
