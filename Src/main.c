@@ -152,9 +152,9 @@ int main(void)
   MX_TIM8_Init();
 
   /* Configure LED3, LED4, LED5 and LED6 */
-//  BSP_LED_Init(LED3);
+//  BSP_LED_Init(LED3);// led orange
   BSP_LED_Init(LED4); // led green
-//  BSP_LED_Init(LED5);
+//  BSP_LED_Init(LED5); //led red
   BSP_LED_Init(LED6); // led blue
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
@@ -479,41 +479,12 @@ uint8_t Get_Position()
 {
 	uint8_t pos = 0;
 
-	uint8_t pin_d_8, pin_d_9, pin_d_10, pin_d_11;
-	uint8_t pin_b_12, pin_b_13, pin_b_14, pin_b_15;
-//	if (HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_8)) {
-//		BSP_LED_Toggle(LED6);
-//	} else {
-//		BSP_LED_Toggle(LED4);
-//	}
-	//word 1
-	pin_d_8 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_8);
-	pin_d_9 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_9);
-	pin_d_10 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_10);
-	pin_d_11 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_11);
-	pos = pin_d_8 | (pin_d_9 << 1) | (pin_d_10 << 2) | (pin_d_11 << 3);
+//	uint8_t pin_d_1 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1);
 
-	//word 2
-	pin_b_12 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_12);
-	pin_b_13 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_13);
-	pin_b_14 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_14);
-	pin_b_15 = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_15);
-
-	pos = pos | (pin_b_12 << 4) | (pin_b_13 << 5) | (pin_b_14 << 6) | (pin_b_15 << 7);
-
-	uint8_t pin_values[8];
-	pin_values[0] = pin_d_8;
-	pin_values[1] = pin_d_9;
-	pin_values[2] = pin_d_10;
-	pin_values[3] = pin_d_11;
-	pin_values[4] = pin_b_12;
-	pin_values[5] = pin_b_13;
-	pin_values[6] = pin_b_14;
-	pin_values[7] = pin_b_15;
-
-	uint16_t port_value = HAL_GPIO_ReadPort(GPIOB);
-	port_value = port_value >> 8;
+	uint16_t port_value = HAL_GPIO_ReadPort(GPIOD);
+	port_value &= 0x00FF;
 	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t*)&port_value, 1);
+//	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pin_d_1, 1);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
 	return pos;
 }
