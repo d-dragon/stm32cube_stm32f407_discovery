@@ -73,8 +73,6 @@
 #define SPI1_MOSI_GPIO_Port GPIOA
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
-#define I2S3_MCK_Pin GPIO_PIN_7
-#define I2S3_MCK_GPIO_Port GPIOC
 #define VBUS_FS_Pin GPIO_PIN_9
 #define VBUS_FS_GPIO_Port GPIOA
 #define OTG_FS_ID_Pin GPIO_PIN_10

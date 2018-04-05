@@ -149,20 +149,20 @@ int main(void)
   MX_TIM4_Init();
   MX_ADC1_Init();
   MX_USART3_UART_Init();
+  MX_TIM8_Init();
 
   /* Configure LED3, LED4, LED5 and LED6 */
 //  BSP_LED_Init(LED3);
-  BSP_LED_Init(LED4);
+  BSP_LED_Init(LED4); // led green
 //  BSP_LED_Init(LED5);
-  BSP_LED_Init(LED6);
-
+  BSP_LED_Init(LED6); // led blue
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
 
-  PWM_Set_Duty(duty);
+  HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_1);
 
   /* Receive Data register not empty interrupt */
   //__HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
@@ -451,6 +451,7 @@ void PWM_Set_Duty(uint16_t duty_cycle)
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, duty_cycle);
 }
 
 
@@ -551,6 +552,8 @@ void Set_PWM(uint8_t *data, uint8_t len) {
 		duty_cycle = 255;
 	}
 	PWM_Set_Duty(duty_cycle);
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+
 
 	/****************************************/
 
