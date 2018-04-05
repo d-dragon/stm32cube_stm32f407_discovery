@@ -45,12 +45,12 @@
 #include "usart.h"
 #include "gpio.h"
 
-#include "arm_math.h"
-
 /* USER CODE BEGIN Includes */
+#include "arm_math.h"
 #include "message_util.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4_discovery.h"
+
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -66,6 +66,7 @@ float32_t maxValue;
 uint32_t maxIndex;
 
 extern DMA_HandleTypeDef hdma_usart2_rx;
+extern DMA_HandleTypeDef hdma_usart3_rx;
 /* Private variables ---------------------------------------------------------*/
 #define RECV_BUFF_SIZE 64
 #define SEND_BUFF_SIZE 64
@@ -128,7 +129,10 @@ int main(void)
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
+  /* USER CODE BEGIN Init */
 
+
+  /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
@@ -140,39 +144,42 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-
-  DMA_Init();
-
   MX_USART2_UART_Init();
   MX_TIM2_Init();
   MX_TIM4_Init();
   MX_ADC1_Init();
+  MX_USART3_UART_Init();
+  MX_TIM8_Init();
 
-  /* USER CODE BEGIN Init */
   /* Configure LED3, LED4, LED5 and LED6 */
 //  BSP_LED_Init(LED3);
-  BSP_LED_Init(LED4);
+  BSP_LED_Init(LED4); // led green
 //  BSP_LED_Init(LED5);
-  BSP_LED_Init(LED6);
-
-  /* USER CODE END Init */
+  BSP_LED_Init(LED6); // led blue
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
 
-  PWM_Set_Duty(duty);
+  HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_1);
 
   /* Receive Data register not empty interrupt */
   //__HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
   /* Enable the UART Transmition Complete Interrupt */
   //__HAL_UART_ENABLE_IT(&huart2, UART_IT_TC);
-  __HAL_UART_FLUSH_DRREGISTER(&huart2);
-  if (HAL_UART_Receive_DMA(&huart2, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
-  {
+//  __HAL_UART_FLUSH_DRREGISTER(&huart2);
+//  if (HAL_UART_Receive_DMA(&huart2, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+//  {
+//
+//  }
 
-  }
+    __HAL_UART_FLUSH_DRREGISTER(&huart3);
+    if (HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+    {
+
+    }
+
   /* Disable Half Transfer Interrupt */
  // __HAL_DMA_DISABLE_IT(huart2.hdmarx, DMA_IT_HT);
 
@@ -183,7 +190,7 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_UART_Transmit_IT(&huart2, (uint8_t*)bufftr, 8);
+  HAL_UART_Transmit_IT(&huart3, (uint8_t*)bufftr, 8);
   BSP_LED_Toggle(LED6); //TX-blue
   while (1)
   {
@@ -199,13 +206,15 @@ int main(void)
 		  if (err == MSG_PARSER_SUCCESS) {
 			  HandleMessage(msg);
 		  } else {
-			  HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
+				MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &err, 1);
+
 		  }
 //		  MATLAB_Message_Handler(data, data_len);
 //		  HAL_UART_Transmit(&huart2, data, data_len, 5); //echo
 //		  HAL_UART_Transmit(&huart2, (uint8_t*)bufftr, 8, 5);
 
 		  recv_msg_flag = RESET;
+
 	  }
 
 
@@ -365,7 +374,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 //  BSP_LED_On(LED6);
 //  HAL_Delay(50);
 //  BSP_LED_Off(LED6);
-	__HAL_UART_FLUSH_DRREGISTER(&huart2);
+	__HAL_UART_FLUSH_DRREGISTER(&huart3);
 }
 
 /**
@@ -377,40 +386,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
   */
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
-  /* Set transmission flag: transfer complete */
-//  UartReady = SET;
-//  if (buffrec[0] == 'a' && buffrec[1] == 'b') {
-//	  /* Turn LED4 on: Transfer in reception process is correct */
-//	  BSP_LED_On(LED4);
-//  }
-//	__HAL_UART_FLUSH_DRREGISTER(&huart2); // Clear the buffer to prevent overrun
-//	if (rxbuff_idx == RECV_BUFF_SIZE) {
-//		rxbuff_idx = 0; //buffer overflow
-//	}
-//	rxbuff[rxbuff_idx] = buffrec;
-//	rxbuff_idx++;
-
-	//HAL_UART_Transmit_IT(&huart2, &buffrec, 1);
-
-//	if (buffrec != 0) {
-//			  if (buffrec == 'i' && duty < 400) {
-//			     duty += fade;
-//			  } else if ( buffrec == 'd' && duty > 0) {
-//			  		  duty -= fade;
-//			  }
-//		  PWM_Set_Duty(duty);
-//
-//			  	  uint8_t buff[2];
-//			  	  buff[0] = duty & 0xff;
-//			  	  buff[1] = (duty >> 8);
-//			  	  HAL_UART_Transmit_IT(&huart2, (uint8_t *)buff, sizeof(buff));
-////			  	  UartReady = RESET;
-//
-//	//		  	  buffrec = 0;
-//		  }
-
-
-
 	/* *****************************************************************
 	 * DMA with Timeout Event
 	 * ****************************************************************
@@ -418,6 +393,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 
 	uint16_t i, pos, start, length;
 	uint16_t currCNDTR = __HAL_DMA_GET_COUNTER(UartHandle->hdmarx);
+
 
 	/* Ignore IDLE Timeout when the received characters exactly filled up the DMA buffer and DMA Rx Complete IT is generated, but there is no new character during timeout */
 	if (dma_uart_rx.flag && currCNDTR == DMA_BUF_SIZE) {
@@ -453,6 +429,12 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 	}
 	data_len = length;
 	recv_msg_flag = SET;
+	HAL_UART_DMAStop(&huart3);
+	dma_uart_rx.prevCNDTR = DMA_BUF_SIZE;
+	HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE);
+	__HAL_DMA_SET_COUNTER(UartHandle->hdmarx, DMA_BUF_SIZE);
+
+
 
 //	uint8_t err;
 //	matlab_msg = MatLab_Message_Parser(data, length, &err);
@@ -469,6 +451,7 @@ void PWM_Set_Duty(uint16_t duty_cycle)
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
+	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, duty_cycle);
 }
 
 
@@ -488,7 +471,7 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 		Set_PWM(ml_msg.payload.data, ml_msg.payload.len);
 		break;
 	default:
-		HAL_UART_Transmit(&huart2, (uint8_t *)resp_msg_err, 18, 5);
+		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_CMD_INVALID, 1);
 	}
 }
 
@@ -569,12 +552,14 @@ void Set_PWM(uint8_t *data, uint8_t len) {
 		duty_cycle = 255;
 	}
 	PWM_Set_Duty(duty_cycle);
+	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
+
 
 	/****************************************/
 
 	/* Respond result by calling Send_Response_Message*/
 
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_RUN_ERROR, 1);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
 
 }
 /* USER CODE END 4 */
@@ -593,8 +578,6 @@ void _Error_Handler(char * file, int line)
   }
   /* USER CODE END Error_Handler_Debug */ 
 }
-
-
 
 #ifdef USE_FULL_ASSERT
 
