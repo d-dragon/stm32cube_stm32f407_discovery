@@ -61,6 +61,6 @@ uint8_t MatLab_Send_Response(uint8_t msg_type, uint8_t *payload, uint8_t payload
 
 	/*******************************/
 
-	HAL_UART_Transmit(&huart2, res_msg, msg_len, 5);
+	HAL_UART_Transmit(&huart3, res_msg, msg_len, 5);
 	return 0;
 }

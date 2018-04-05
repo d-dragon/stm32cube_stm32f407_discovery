@@ -67,7 +67,8 @@ void SysTick_Handler(void)
   if (dma_uart_rx.timer == 1) {
 	  /* DMA Timeout event: set Timeout Flag and call DMA Rx Complete Callback */
 	  dma_uart_rx.flag = 1;
-	  hdma_usart2_rx.XferCpltCallback(&hdma_usart2_rx);
+//	  hdma_usart2_rx.XferCpltCallback(&hdma_usart2_rx);
+	  hdma_usart3_rx.XferCpltCallback(&hdma_usart3_rx);
   }
   if (dma_uart_rx.timer) {
 	  --dma_uart_rx.timer;
@@ -92,7 +93,6 @@ void DMA1_Stream1_IRQHandler(void)
   /* USER CODE END DMA1_Stream1_IRQn 0 */
   HAL_DMA_IRQHandler(&hdma_usart3_rx);
   /* USER CODE BEGIN DMA1_Stream1_IRQn 1 */
-
   /* USER CODE END DMA1_Stream1_IRQn 1 */
 }
 
@@ -132,14 +132,13 @@ void USART2_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 0 */
 	HAL_UART_IRQHandler(&huart2);
 	    /* UART IDLE Interrupt */
-		if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
-			__HAL_UART_CLEAR_IDLEFLAG(&huart2);
-			//USART2->ICR = UART_CLEAR_IDLEF;
-			/* Start DMA timer */
-			dma_uart_rx.timer = DMA_TIMEOUT_MS;
-		}
-  /* USER CODE END USART2_IRQn 0 */
-  HAL_UART_IRQHandler(&huart2);
+//		if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
+//			__HAL_UART_CLEAR_IDLEFLAG(&huart2);
+//			//USART2->ICR = UART_CLEAR_IDLEF;
+//			/* Start DMA timer */
+//			dma_uart_rx.timer = DMA_TIMEOUT_MS;
+//		}
+
   /* USER CODE BEGIN USART2_IRQn 1 */
   //HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
 //  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);
@@ -156,7 +155,13 @@ void USART3_IRQHandler(void)
   /* USER CODE END USART3_IRQn 0 */
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */
-
+  /* UART IDLE Interrupt */
+  if (__HAL_UART_GET_FLAG(&huart3, UART_FLAG_IDLE) != RESET) {
+	  __HAL_UART_CLEAR_IDLEFLAG(&huart3);
+	  //USART2->ICR = UART_CLEAR_IDLEF;
+	  /* Start DMA timer */
+	  dma_uart_rx.timer = DMA_TIMEOUT_MS;
+  }
   /* USER CODE END USART3_IRQn 1 */
 }
 
