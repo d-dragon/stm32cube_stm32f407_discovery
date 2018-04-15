@@ -48,6 +48,7 @@
 /* USER CODE BEGIN Includes */
 #include "arm_math.h"
 #include "message_util.h"
+#include "motor_controller.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4_discovery.h"
 
@@ -81,6 +82,7 @@ __IO ITStatus recv_msg_flag = RESET; //declare volatile so that the variable cou
 
 
 MatLab_Message_TypeDef matlab_msg;
+PID_Algo_Params_TypeDef pid_params;
 
 /* DMA Timeout event structure
  * Note: prevCNDTR initial value must be set to maximum size of DMA buffer!
@@ -110,7 +112,8 @@ void PWM_Set_Duty(uint16_t);
 void DMA_Init(void);
 void HandleMessage(MatLab_Message_TypeDef ml_msg);
 void Set_PWM(uint8_t *data, uint8_t len);
-uint8_t Get_Position();
+void Get_Position();
+uint8_t Read_Encoder_Position();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -475,18 +478,23 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 	}
 }
 
-uint8_t Get_Position()
+void Get_Position()
 {
 	uint8_t pos = 0;
 
 //	uint8_t pin_d_1 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1);
 
-	uint16_t port_value = HAL_GPIO_ReadPort(GPIOD);
-	port_value &= 0x00FF;
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t*)&port_value, 1);
+//	uint16_t port_value = HAL_GPIO_ReadPort(GPIOD);
+//	port_value &= 0x00FF;
+	pos = Read_Encoder_Position();
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pos, 1);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pin_d_1, 1);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
-	return pos;
+}
+
+uint8_t Read_Encoder_Position()
+{
+	return (uint8_t)HAL_GPIO_ReadPort(GPIOD);
 }
 
 void Set_PWM(uint8_t *data, uint8_t len) {
@@ -503,21 +511,32 @@ void Set_PWM(uint8_t *data, uint8_t len) {
 
 	*************************************/
 
-	float32_t k_p, k_i, k_d, result_f;
+	float32_t kp, ki, kd, result_f;
 	uint16_t tag_pul = 0;
-	uint16_t duty_cycle;
+	uint16_t duty_cycle, k_in, k_d, current_pos, last_error, error;
+
+	last_error = error = 0;
+
+	k_in = 0;
 
 	tag_pul = data[1];
 	tag_pul = tag_pul << 8;
 	tag_pul |= data[0];
 
 
-	k_p = *(float32_t*) (data + 2); // f.e. 1.123 -> data = 77 be 8f 3f
-	k_i = *(float32_t*) (data + 6);
-	k_d = *(float32_t*) (data + 10);
-	result_f = k_p + k_i + k_d;
+	kp = *(float32_t*) (data + 2); // f.e. 1.123 -> data = 77 be 8f 3f
+	ki = *(float32_t*) (data + 6);
+	kd = *(float32_t*) (data + 10);
 
-	duty_cycle = (uint16_t)(result_f * (float32_t)tag_pul);
+	current_pos = (uint16_t) Read_Encoder_Position();
+
+	error = tag_pul - current_pos;
+	k_in = k_in + error;
+	k_d = error - last_error;
+
+	result_f = kp*error + ki*k_in + kd*k_d;
+
+	duty_cycle = (uint16_t)result_f;
 
 	if (duty_cycle > 255) {
 		duty_cycle = 255;
