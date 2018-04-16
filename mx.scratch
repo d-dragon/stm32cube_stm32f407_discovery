@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-<ProjectName>G:\00_Work\02_VEE_STM32\STM32CubeMX\STM32F407VGTx\USART2_example\\USART2_example</ProjectName>
+<ProjectName>G:\00_Work\02_VEE_STM32\STM32CubeMX\STM32F407VGTx\USART2_example\\VEE_STM32CubeMX_project</ProjectName>
 <CMSIS>..\Drivers\CMSIS</CMSIS>
 <HAL_Driver>C:\Users\phand\STM32Cube\Repository\STM32Cube_FW_F4_V1.18.0\Drivers\CMSIS</HAL_Driver>
 
@@ -22,7 +22,7 @@
 
 <configs>
   <config>
-    <name>USART2_example</name>				
+    <name>VEE_STM32CubeMX_project</name>				
     <device>STM32F407VGTx</device>		 
     <heapSize>0x200</heapSize>
     <stackSize>0x400</stackSize>

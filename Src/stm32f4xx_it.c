@@ -43,8 +43,10 @@ extern DMA_Event_t dma_uart_rx;
 /* External variables --------------------------------------------------------*/
 extern DMA_HandleTypeDef hdma_adc1;
 extern ADC_HandleTypeDef hadc1;
+extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern DMA_HandleTypeDef hdma_usart3_rx;
+extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 
@@ -67,8 +69,9 @@ void SysTick_Handler(void)
   if (dma_uart_rx.timer == 1) {
 	  /* DMA Timeout event: set Timeout Flag and call DMA Rx Complete Callback */
 	  dma_uart_rx.flag = 1;
+	  hdma_usart1_rx.XferCpltCallback(&hdma_usart1_rx);
 //	  hdma_usart2_rx.XferCpltCallback(&hdma_usart2_rx);
-	  hdma_usart3_rx.XferCpltCallback(&hdma_usart3_rx);
+//	  hdma_usart3_rx.XferCpltCallback(&hdma_usart3_rx);
   }
   if (dma_uart_rx.timer) {
 	  --dma_uart_rx.timer;
@@ -125,20 +128,41 @@ void ADC_IRQHandler(void)
 }
 
 /**
+* @brief This function handles USART1 global interrupt.
+*/
+void USART1_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART1_IRQn 0 */
+
+  /* USER CODE END USART1_IRQn 0 */
+  HAL_UART_IRQHandler(&huart1);
+  /* USER CODE BEGIN USART1_IRQn 1 */
+  /* UART IDLE Interrupt */
+  if (__HAL_UART_GET_FLAG(&huart1, UART_FLAG_IDLE) != RESET) {
+	  __HAL_UART_CLEAR_IDLEFLAG(&huart1);
+	  //USART2->ICR = UART_CLEAR_IDLEF;
+	  /* Start DMA timer */
+	  dma_uart_rx.timer = DMA_TIMEOUT_MS;
+  }
+  /* USER CODE END USART1_IRQn 1 */
+}
+
+/**
 * @brief This function handles USART2 global interrupt.
 */
 void USART2_IRQHandler(void)
 {
   /* USER CODE BEGIN USART2_IRQn 0 */
-	HAL_UART_IRQHandler(&huart2);
-	    /* UART IDLE Interrupt */
-//		if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
-//			__HAL_UART_CLEAR_IDLEFLAG(&huart2);
-//			//USART2->ICR = UART_CLEAR_IDLEF;
-//			/* Start DMA timer */
-//			dma_uart_rx.timer = DMA_TIMEOUT_MS;
-//		}
 
+  /* USER CODE END USART2_IRQn 0 */
+  HAL_UART_IRQHandler(&huart2);
+  /* UART IDLE Interrupt */
+//             if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
+//                     __HAL_UART_CLEAR_IDLEFLAG(&huart2);
+//                     //USART2->ICR = UART_CLEAR_IDLEF;
+//                     /* Start DMA timer */
+//                     dma_uart_rx.timer = DMA_TIMEOUT_MS;
+//             }
   /* USER CODE BEGIN USART2_IRQn 1 */
   //HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
 //  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);
@@ -156,12 +180,12 @@ void USART3_IRQHandler(void)
   HAL_UART_IRQHandler(&huart3);
   /* USER CODE BEGIN USART3_IRQn 1 */
   /* UART IDLE Interrupt */
-  if (__HAL_UART_GET_FLAG(&huart3, UART_FLAG_IDLE) != RESET) {
-	  __HAL_UART_CLEAR_IDLEFLAG(&huart3);
-	  //USART2->ICR = UART_CLEAR_IDLEF;
-	  /* Start DMA timer */
-	  dma_uart_rx.timer = DMA_TIMEOUT_MS;
-  }
+//  if (__HAL_UART_GET_FLAG(&huart3, UART_FLAG_IDLE) != RESET) {
+//	  __HAL_UART_CLEAR_IDLEFLAG(&huart3);
+//	  //USART2->ICR = UART_CLEAR_IDLEF;
+//	  /* Start DMA timer */
+//	  dma_uart_rx.timer = DMA_TIMEOUT_MS;
+//  }
   /* USER CODE END USART3_IRQn 1 */
 }
 
@@ -177,6 +201,20 @@ void DMA2_Stream0_IRQHandler(void)
   /* USER CODE BEGIN DMA2_Stream0_IRQn 1 */
 
   /* USER CODE END DMA2_Stream0_IRQn 1 */
+}
+
+/**
+* @brief This function handles DMA2 stream2 global interrupt.
+*/
+void DMA2_Stream2_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 0 */
+
+  /* USER CODE END DMA2_Stream2_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_usart1_rx);
+  /* USER CODE BEGIN DMA2_Stream2_IRQn 1 */
+
+  /* USER CODE END DMA2_Stream2_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */

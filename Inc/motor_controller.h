@@ -12,9 +12,11 @@
 #include "stm32f4xx_hal.h"
 #include "arm_math.h"
 
-#define K_P_POS 2
-#define K_I_POS 6
-#define K_D_POS 10
+#define K_P_POS 			2
+#define K_I_POS 			6
+#define K_D_POS 			10
+#define DUTY_CYCLE_MAX 		255
+#define DUTY_CYCLE_MIN		0
 #define ENCODER_MARK 0x00FFU
 
 typedef struct {
@@ -29,6 +31,9 @@ typedef struct {
 
 extern PID_Algo_Params_TypeDef pid_algo_params;
 
-uint8_t Set_Motor_Speed(PID_Algo_Params_TypeDef *pid_params);
+uint8_t Motor_Forward_Drive(uint16_t duty_cycle);
+uint8_t Motor_Reverse_Drive(uint16_t duty_cycle);
+uint8_t Read_Encoder_Position();
+void Control_Motor(uint8_t *data, uint8_t len);
 
 #endif /* MOTOR_CONTROLLER_H_ */

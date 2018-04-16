@@ -256,7 +256,7 @@
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="USART2_example" />
+			<resource resourceType="PROJECT" workspacePath="VEE_STM32CubeMX_project" />
 		</configuration>
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/USART2_example" />

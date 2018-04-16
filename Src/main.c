@@ -65,7 +65,7 @@ float32_t Input[SAMPLES];
 float32_t Output[FFT_SIZE];
 float32_t maxValue;
 uint32_t maxIndex;
-
+extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern DMA_HandleTypeDef hdma_usart3_rx;
 /* Private variables ---------------------------------------------------------*/
@@ -108,12 +108,12 @@ void SystemClock_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-void PWM_Set_Duty(uint16_t);
+//void PWM_Set_Duty(uint16_t);
 void DMA_Init(void);
 void HandleMessage(MatLab_Message_TypeDef ml_msg);
-void Set_PWM(uint8_t *data, uint8_t len);
+void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len);
+//void Control_Motor(uint8_t *data, uint8_t len);
 void Get_Position();
-uint8_t Read_Encoder_Position();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -153,19 +153,24 @@ int main(void)
   MX_ADC1_Init();
   MX_USART3_UART_Init();
   MX_TIM8_Init();
+  MX_USART1_UART_Init();
+
+  /* USER CODE BEGIN 2 */
 
   /* Configure LED3, LED4, LED5 and LED6 */
 //  BSP_LED_Init(LED3);// led orange
   BSP_LED_Init(LED4); // led green
 //  BSP_LED_Init(LED5); //led red
   BSP_LED_Init(LED6); // led blue
-  /* USER CODE BEGIN 2 */
+
+
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_1);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3);
   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4);
 
   HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_2);
 
   /* Receive Data register not empty interrupt */
   //__HAL_UART_ENABLE_IT(&huart2, UART_IT_RXNE);
@@ -177,12 +182,17 @@ int main(void)
 //
 //  }
 
-    __HAL_UART_FLUSH_DRREGISTER(&huart3);
-    if (HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
-    {
+//    __HAL_UART_FLUSH_DRREGISTER(&huart3);
+//    if (HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+//    {
+//
+//    }
 
-    }
+  __HAL_UART_FLUSH_DRREGISTER(&huart1);
+  if (HAL_UART_Receive_DMA(&huart1, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+  {
 
+  }
   /* Disable Half Transfer Interrupt */
  // __HAL_DMA_DISABLE_IT(huart2.hdmarx, DMA_IT_HT);
 
@@ -432,9 +442,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 	}
 	data_len = length;
 	recv_msg_flag = SET;
-	HAL_UART_DMAStop(&huart3);
+//	HAL_UART_DMAStop(&huart3);
+	HAL_UART_DMAStop(&huart1);
 	dma_uart_rx.prevCNDTR = DMA_BUF_SIZE;
-	HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE);
+//	HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE);
+	HAL_UART_Receive_DMA(&huart1, dma_rx_buf, DMA_BUF_SIZE);
 	__HAL_DMA_SET_COUNTER(UartHandle->hdmarx, DMA_BUF_SIZE);
 
 
@@ -448,20 +460,20 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 //	HAL_UART_Transmit_IT(&huart2, data, length);
 }
 
-void PWM_Set_Duty(uint16_t duty_cycle)
-{
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
-	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, duty_cycle);
-}
+//void PWM_Set_Duty(uint16_t duty_cycle)
+//{
+//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, duty_cycle);
+//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
+//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
+//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
+//}
 
 
 void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 	switch (ml_msg.cmd_type) {
 	case MATLAB_CMD_SEND_PARAM:
 		/* TODO - Call SendParam function */
+		MatLab_Send_Param_Handler(ml_msg.payload.data, ml_msg.payload.len);
 		break;
 	case MATLAB_CMD_GET_POS:
 		/* TODO - Call GetPos function */
@@ -471,7 +483,7 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 		/* TODO - Call Soft reset function */
 		break;
 	case MATLAB_CMD_SET_PWM:
-		Set_PWM(ml_msg.payload.data, ml_msg.payload.len);
+
 		break;
 	default:
 		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_CMD_INVALID, 1);
@@ -492,66 +504,18 @@ void Get_Position()
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
 }
 
-uint8_t Read_Encoder_Position()
+
+void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len)
 {
-	return (uint8_t)HAL_GPIO_ReadPort(GPIOD);
-}
-
-void Set_PWM(uint8_t *data, uint8_t len) {
-
-	/***************************************
-
-	 data map = [0] [1] | [2].....[5] | [6].....[9] | [10]...[13]
-			    tag_pul |     k_p	  |     k_i	    |     k_d
-			ex:  10 00  | 77 BE 8F 3F | 44 8B 54 40 | 08 AC 7C 3F
-	tag_pul = 9
-	k_p = 1.123 (0x3f8fbe77)
-	k_i = 3.321 (0x40548b44)
-	k_d = 0.987 (0x3f7cac08)
-
-	*************************************/
-
-	float32_t kp, ki, kd, result_f;
-	uint16_t tag_pul = 0;
-	uint16_t duty_cycle, k_in, k_d, current_pos, last_error, error;
-
-	last_error = error = 0;
-
-	k_in = 0;
-
-	tag_pul = data[1];
-	tag_pul = tag_pul << 8;
-	tag_pul |= data[0];
-
-
-	kp = *(float32_t*) (data + 2); // f.e. 1.123 -> data = 77 be 8f 3f
-	ki = *(float32_t*) (data + 6);
-	kd = *(float32_t*) (data + 10);
-
-	current_pos = (uint16_t) Read_Encoder_Position();
-
-	error = tag_pul - current_pos;
-	k_in = k_in + error;
-	k_d = error - last_error;
-
-	result_f = kp*error + ki*k_in + kd*k_d;
-
-	duty_cycle = (uint16_t)result_f;
-
-	if (duty_cycle > 255) {
-		duty_cycle = 255;
-	}
-	PWM_Set_Duty(duty_cycle);
-	HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_7);
-
-
+	Control_Motor(data, len);
 	/****************************************/
 
 	/* Respond result by calling Send_Response_Message*/
 
 	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
-
 }
+
+
 /* USER CODE END 4 */
 
 /**
