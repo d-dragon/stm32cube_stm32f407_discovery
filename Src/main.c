@@ -182,17 +182,17 @@ int main(void)
 //
 //  }
 
-//    __HAL_UART_FLUSH_DRREGISTER(&huart3);
-//    if (HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
-//    {
+    __HAL_UART_FLUSH_DRREGISTER(&huart3);
+    if (HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+    {
+
+    }
+
+//  __HAL_UART_FLUSH_DRREGISTER(&huart1);
+//  if (HAL_UART_Receive_DMA(&huart1, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
+//  {
 //
-//    }
-
-  __HAL_UART_FLUSH_DRREGISTER(&huart1);
-  if (HAL_UART_Receive_DMA(&huart1, dma_rx_buf, DMA_BUF_SIZE) != HAL_OK)
-  {
-
-  }
+//  }
   /* Disable Half Transfer Interrupt */
  // __HAL_DMA_DISABLE_IT(huart2.hdmarx, DMA_IT_HT);
 
@@ -442,11 +442,11 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 	}
 	data_len = length;
 	recv_msg_flag = SET;
-//	HAL_UART_DMAStop(&huart3);
-	HAL_UART_DMAStop(&huart1);
+	HAL_UART_DMAStop(&huart3);
+//	HAL_UART_DMAStop(&huart1);
 	dma_uart_rx.prevCNDTR = DMA_BUF_SIZE;
-//	HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE);
-	HAL_UART_Receive_DMA(&huart1, dma_rx_buf, DMA_BUF_SIZE);
+	HAL_UART_Receive_DMA(&huart3, dma_rx_buf, DMA_BUF_SIZE);
+//	HAL_UART_Receive_DMA(&huart1, dma_rx_buf, DMA_BUF_SIZE);
 	__HAL_DMA_SET_COUNTER(UartHandle->hdmarx, DMA_BUF_SIZE);
 
 
