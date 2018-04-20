@@ -13,6 +13,8 @@
 #define MSG_TYPE_POS		1
 #define MSG_PAYLOAD_POS		2
 
+#define CRC_POS(data_len) (data_len - 2)
+
 typedef enum {
 	MATLAB_CMD_REPLY = 0,
 	MATLAB_CMD_RESTART,
