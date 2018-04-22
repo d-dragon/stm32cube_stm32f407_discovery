@@ -77,12 +77,14 @@ uint16_t Calulate_CRC(uint8_t *data, uint8_t length)
 		data_temp[i] = data[i];
 	}
 
-	crc = CRCCCITT(data_temp, length, 0x1d0f, 0xffff);
+//	crc = CRCCCITT(data_temp, length, 0x1d0f, 0xffff);
+	crc = CRCCCITT(data_temp, length, 0xffff, 0xffff);
 //	crc = CRCCCITT(data_temp, length, 0x00, 0xffff);
 
 	data_temp [length] = (uint8_t)((crc >> 8) & 0xff);
 	data_temp [length + 1] = (uint8_t)(crc & 0xff);
-	crc = CRCCCITT(data_temp, length, 0x1d0f, 0xffff);
+//	crc = CRCCCITT(data_temp, length, 0x1d0f, 0xffff);
+	crc = CRCCCITT(data_temp, length, 0xffff, 0xffff);
 //	crc = CRCCCITT(data_temp, length + 2, 0x00, 0xffff);
 	return crc;
 }

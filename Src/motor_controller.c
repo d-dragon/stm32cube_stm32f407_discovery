@@ -11,21 +11,35 @@
 
 uint8_t Motor_Forward_Drive(uint16_t duty_cycle)
 {
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
 }
 
 uint8_t Motor_Reverse_Drive(uint16_t duty_cycle)
 {
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_11, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, duty_cycle);
 }
 
-uint8_t Read_Encoder_Position()
+uint16_t Read_Encoder_Position()
 {
-	return (uint8_t)HAL_GPIO_ReadPort(GPIOD);
+	uint8_t high_byte, low_byte;
+	uint16_t pos;
+
+//	HAL_GPIO_WritePin(GPIOx, GPIO_PIN_x, GPIO_PIN_SET); // Inhibit signal
+	/* Read High byte */
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET); // SEL = 0
+	high_byte = (uint8_t) HAL_GPIO_ReadPort(GPIOD);
+
+	/* Read low byte */
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET); // SEL = 1
+	low_byte = (uint8_t) HAL_GPIO_ReadPort(GPIOD);
+
+	pos = (high_byte << 8) | low_byte;
+
+	return pos;
 }
 
 void Control_Motor(uint8_t *data, uint8_t len) {
@@ -59,7 +73,7 @@ void Control_Motor(uint8_t *data, uint8_t len) {
 	ki = *(float32_t*) (data + K_I_POS);
 	kd = *(float32_t*) (data + K_D_POS);
 
-	current_pos = (uint16_t) Read_Encoder_Position();
+	current_pos = Read_Encoder_Position();
 
 	error = tag_pul - current_pos;
 	k_in = k_in + error;
@@ -78,7 +92,7 @@ void Control_Motor(uint8_t *data, uint8_t len) {
 	} else if (result_f < 0) {
 		Motor_Reverse_Drive(duty_cycle);
 	}
-
+//	Motor_Forward_Drive(25);
 	/* For Debugging */
 	PWM_Set_Duty(duty_cycle);
 }

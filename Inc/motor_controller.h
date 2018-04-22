@@ -33,7 +33,7 @@ extern PID_Algo_Params_TypeDef pid_algo_params;
 
 uint8_t Motor_Forward_Drive(uint16_t duty_cycle);
 uint8_t Motor_Reverse_Drive(uint16_t duty_cycle);
-uint8_t Read_Encoder_Position();
+uint16_t Read_Encoder_Position();
 void Control_Motor(uint8_t *data, uint8_t len);
 
 #endif /* MOTOR_CONTROLLER_H_ */
