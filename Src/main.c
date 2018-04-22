@@ -115,6 +115,8 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg);
 void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len);
 //void Control_Motor(uint8_t *data, uint8_t len);
 void Get_Position();
+void Read_ADC();
+void Set_PWM(uint8_t *data);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -139,11 +141,11 @@ int main(void)
   /* USER CODE END Init */
 
   /* Configure the system clock */
-  SystemClock_Config();
+//  SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
 
-//  SystemClockHSE_Config();
+  SystemClockHSE_Config();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -583,10 +585,15 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 		/* TODO - Call GetPos function */
 		Get_Position();
 		break;
+	case MATLAB_CMD_READ_ADC:
+		Read_ADC();
+		break;
 	case MATLAB_CMD_RESTART:
 		/* TODO - Call Soft reset function */
 		break;
 	case MATLAB_CMD_SET_PWM:
+		Set_PWM(ml_msg.payload.data);
+		break;
 
 		break;
 	default:
@@ -608,6 +615,34 @@ void Get_Position()
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
 }
 
+void Read_ADC()
+{
+	uint8_t buff[6];
+	uint16_t adc1_in0, adc1_in1, adc1_in11;
+
+	HAL_ADC_Stop_DMA(&hadc1);
+	adc1_in0 = adc_value[0];
+	adc1_in1 = adc_value[1];
+	adc1_in11 = adc_value[2];
+
+	buff[0] = (uint8_t) (adc1_in0 & 0x00ff);
+	buff[1] = (uint8_t) (adc1_in0 >> 8);
+	buff[2] = (uint8_t) (adc1_in1 & 0x00ff);
+	buff[3] = (uint8_t) (adc1_in1 >> 8);
+	buff[4] = (uint8_t) (adc1_in11 & 0x00ff);
+	buff[5] = (uint8_t) (adc1_in11 >> 8);
+
+	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_value, 3);
+
+	MatLab_Send_Response((uint8_t) MATLAB_CMD_REPLY, buff, 6);
+}
+
+void Set_PWM(uint8_t *data)
+{
+	Motor_Forward_Drive((uint16_t) data[0]);
+	PWM_Set_Duty((uint16_t) data[0]);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
+}
 
 void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len)
 {

@@ -37,7 +37,7 @@ uint16_t Read_Encoder_Position()
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET); // SEL = 1
 	low_byte = (uint8_t) HAL_GPIO_ReadPort(GPIOD);
 
-	pos = (high_byte << 8) | low_byte;
+	pos = (uint16_t) (high_byte << 8) | low_byte;
 
 	return pos;
 }
