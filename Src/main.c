@@ -213,13 +213,14 @@ int main(void)
 
   BSP_LED_Toggle(LED6); //TX-blue
 //  Motor_Forward_Drive(100);
+  printf("hello swv\n");
   while (1)
   {
 	  arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
 	  arm_max_f32(Output, FFT_SIZE, &maxValue, &maxIndex);
 	  if (recv_msg_flag == SET) {
 //		  BSP_LED_Toggle(LED4); // green
-
+		  printf("received message\n");
 		  uint8_t err;
 		  MatLab_Message_TypeDef msg;
 		  err = MatLab_Message_Parser(&msg, data, data_len);
