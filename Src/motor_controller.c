@@ -8,6 +8,7 @@
 #include "motor_controller.h"
 #include "gpio.h"
 #include "tim.h"
+#include "delay.h"
 
 uint8_t Motor_Forward_Drive(uint16_t duty_cycle)
 {
@@ -25,23 +26,36 @@ uint8_t Motor_Reverse_Drive(uint16_t duty_cycle)
 
 uint16_t Read_Encoder_Position()
 {
-	uint8_t high_byte, low_byte;
-	uint16_t pos;
+	uint16_t pos, high_byte, low_byte;
 
-//	HAL_GPIO_WritePin(GPIOx, GPIO_PIN_x, GPIO_PIN_SET); // Inhibit signal
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET); // OE = 0
 	/* Read High byte */
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET); // SEL = 0
-	high_byte = (uint8_t) HAL_GPIO_ReadPort(GPIOD);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_RESET); // SEL = 0
+	delay_ns(65);
+	high_byte = HAL_GPIO_ReadPort(GPIOD) & 0x00ff;
+
 
 	/* Read low byte */
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET); // SEL = 1
-	low_byte = (uint8_t) HAL_GPIO_ReadPort(GPIOD);
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_SET); // SEL = 1
+	delay_ns(65);
+	low_byte = HAL_GPIO_ReadPort(GPIOD) & 0x00ff;
 
-	pos = (uint16_t) (high_byte << 8) | low_byte;
-
+	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET); // OE =1
+	pos = (high_byte << 8) | low_byte;
 	return pos;
 }
 
+void Reset_Encoder_Counter()
+{
+	HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_RESET);
+	delay_ns(28);
+	HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_SET);
+}
+
+void Encoder_Cycle_Completed()
+{
+	Reset_Encoder_Counter();
+}
 void Control_Motor(uint8_t *data, uint8_t len) {
 
 	/***************************************

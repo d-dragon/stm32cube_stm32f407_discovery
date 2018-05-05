@@ -79,7 +79,7 @@ uint8_t rxbuff[RECV_BUFF_SIZE];
 uint8_t rxbuff_idx = 0;
 //__IO ITStatus UartReady = RESET;
 __IO ITStatus recv_msg_flag = RESET; //declare volatile so that the variable could be changed in interrupt
-
+volatile uint8_t Encoder_High_Z_flag;
 
 MatLab_Message_TypeDef matlab_msg;
 PID_Algo_Params_TypeDef pid_params;
@@ -105,7 +105,6 @@ uint16_t adc_value[3];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void SystemClockHSE_Config(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -117,6 +116,7 @@ void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len);
 void Get_Position();
 void Read_ADC();
 void Set_PWM(uint8_t *data);
+void Encoder_Cycle_Completed_Handler();
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -141,11 +141,11 @@ int main(void)
   /* USER CODE END Init */
 
   /* Configure the system clock */
-//  SystemClock_Config();
+  SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
 
-  SystemClockHSE_Config();
+//  SystemClockHSE_Config();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -214,10 +214,31 @@ int main(void)
   BSP_LED_Toggle(LED6); //TX-blue
 //  Motor_Forward_Drive(100);
   printf("hello swv\n");
+  Encoder_High_Z_flag = RESET;
+  Reset_Encoder_Counter();
   while (1)
   {
-	  arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
-	  arm_max_f32(Output, FFT_SIZE, &maxValue, &maxIndex);
+//	  arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
+//	  arm_max_f32(Output, FFT_SIZE, &maxValue, &maxIndex);
+
+
+	  /**********************Debug encoder************************/
+//	  if (Encoder_High_Z_flag == SET) {
+//		  uint16_t pos = Read_Encoder_Position();
+//		  Encoder_Cycle_Completed_Handler();
+//		  printf("1 cycle counter value = %d\n", pos);
+//	  }
+
+	  uint16_t first_read = Read_Encoder_Position();
+	  uint16_t second_read = Read_Encoder_Position();
+	  printf("first_read = %d | second_read = %d\n", first_read, second_read);
+
+//	  HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_SET);
+//	  uint16_t enc_pos = Read_Encoder_Position();
+//	  printf("decoder value = %d\n", enc_pos);
+	  HAL_Delay(1000);
+	  /*************************************************************/
+
 	  if (recv_msg_flag == SET) {
 //		  BSP_LED_Toggle(LED4); // green
 		  printf("received message\n");
@@ -253,114 +274,23 @@ int main(void)
 void SystemClock_Config(void)
 {
 
-//  RCC_OscInitTypeDef RCC_OscInitStruct;
-//  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-//
-//    /**Configure the main internal regulator output voltage
-//    */
-//  __HAL_RCC_PWR_CLK_ENABLE();
-//
-//  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-//
-//    /**Initializes the CPU, AHB and APB busses clocks
-//    */
-//  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-//  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-//  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-//  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-//  RCC_OscInitStruct.PLL.PLLM = 8;
-//  RCC_OscInitStruct.PLL.PLLN = 336;
-//  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-//  RCC_OscInitStruct.PLL.PLLQ = 7;
-//  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-//  {
-//    _Error_Handler(__FILE__, __LINE__);
-//  }
-//
-//    /**Initializes the CPU, AHB and APB busses clocks
-//    */
-//  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-//                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-//  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-//  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-//  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-//  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
-//
-//  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_7) != HAL_OK)
-//  {
-//    _Error_Handler(__FILE__, __LINE__);
-//  }
-//
-//    /**Configure the Systick interrupt time
-//    */
-//  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-//
-//    /**Configure the Systick
-//    */
-//  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-//
-//  /* SysTick_IRQn interrupt configuration */
-//  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-
-
-
-
-//  RCC_OscInitTypeDef RCC_OscInitStruct;
-//  RCC_ClkInitTypeDef RCC_ClkInitStruct;
-//
-//  __HAL_RCC_PWR_CLK_ENABLE();
-//
-//  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-//
-//  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-//  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-//  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-//  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-//  RCC_OscInitStruct.PLL.PLLM = 8;
-//  RCC_OscInitStruct.PLL.PLLN = 336;
-//  RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-//  RCC_OscInitStruct.PLL.PLLQ = 4;
-//  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//
-//  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-//                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-//  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-//  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-//  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-//  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
-//  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
-//  {
-//    Error_Handler();
-//  }
-//
-//  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
-//
-//  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-//
-//  /* SysTick_IRQn interrupt configuration */
-//  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
-
   RCC_OscInitTypeDef RCC_OscInitStruct;
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
-    /**Configure the main internal regulator output voltage
+    /**Configure the main internal regulator output voltage 
     */
   __HAL_RCC_PWR_CLK_ENABLE();
 
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
-    /**Initializes the CPU, AHB and APB busses clocks
+    /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = 16;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -368,11 +298,11 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Initializes the CPU, AHB and APB busses clocks
+    /**Initializes the CPU, AHB and APB busses clocks 
     */
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV4;
@@ -382,11 +312,11 @@ void SystemClock_Config(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-    /**Configure the Systick interrupt time
+    /**Configure the Systick interrupt time 
     */
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
-    /**Configure the Systick
+    /**Configure the Systick 
     */
   HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
@@ -567,14 +497,6 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 //	HAL_UART_Transmit_IT(&huart2, data, length);
 }
 
-//void PWM_Set_Duty(uint16_t duty_cycle)
-//{
-//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_1, duty_cycle);
-//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_2, duty_cycle);
-//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_3, duty_cycle);
-//	__HAL_TIM_SET_COMPARE(&htim4, TIM_CHANNEL_4, duty_cycle);
-//}
-
 
 void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 	switch (ml_msg.cmd_type) {
@@ -602,16 +524,24 @@ void HandleMessage(MatLab_Message_TypeDef ml_msg) {
 	}
 }
 
+void Encoder_Cycle_Completed_Handler()
+{
+	Reset_Encoder_Counter();
+	Encoder_High_Z_flag = RESET;
+//	  printf("cycle completed\n");
+}
+
 void Get_Position()
 {
-	uint8_t pos = 0;
+	uint16_t pos = 0;
 
 //	uint8_t pin_d_1 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1);
 
 //	uint16_t port_value = HAL_GPIO_ReadPort(GPIOD);
 //	port_value &= 0x00FF;
 	pos = Read_Encoder_Position();
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pos, 1);
+//	printf("Decoder counter value=%d\n", pos);
+//	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pos, 1);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pin_d_1, 1);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
 }

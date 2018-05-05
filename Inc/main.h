@@ -57,6 +57,8 @@
 #define PH1_OSC_OUT_GPIO_Port GPIOH
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
+#define Decoder_Reset_Pin GPIO_PIN_11
+#define Decoder_Reset_GPIO_Port GPIOD
 
 /* ########################## Assert Selection ############################## */
 /**

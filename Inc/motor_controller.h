@@ -36,5 +36,7 @@ uint8_t Motor_Reverse_Drive(uint16_t duty_cycle);
 uint16_t Read_Encoder_Position();
 void Control_Motor(uint8_t *data, uint8_t len);
 void PWM_Set_Duty(uint16_t duty_cycle);
+void Reset_Encoder_Counter();
+void Encoder_Cycle_Completed();
 
 #endif /* MOTOR_CONTROLLER_H_ */

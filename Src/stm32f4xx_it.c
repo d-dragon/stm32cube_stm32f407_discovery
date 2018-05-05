@@ -49,6 +49,7 @@ extern DMA_HandleTypeDef hdma_usart3_rx;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
+extern volatile uint8_t Encoder_High_Z_flag;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -128,6 +129,21 @@ void ADC_IRQHandler(void)
 }
 
 /**
+* @brief This function handles EXTI line[9:5] interrupts.
+*/
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+  Encoder_High_Z_flag = SET;
+//  printf("cycle completed\n");
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
+}
+
+/**
 * @brief This function handles USART1 global interrupt.
 */
 void USART1_IRQHandler(void)
@@ -156,13 +172,6 @@ void USART2_IRQHandler(void)
 
   /* USER CODE END USART2_IRQn 0 */
   HAL_UART_IRQHandler(&huart2);
-  /* UART IDLE Interrupt */
-//             if (__HAL_UART_GET_FLAG(&huart2, UART_FLAG_IDLE) != RESET) {
-//                     __HAL_UART_CLEAR_IDLEFLAG(&huart2);
-//                     //USART2->ICR = UART_CLEAR_IDLEF;
-//                     /* Start DMA timer */
-//                     dma_uart_rx.timer = DMA_TIMEOUT_MS;
-//             }
   /* USER CODE BEGIN USART2_IRQn 1 */
   //HAL_UART_Receive_IT(&huart2, (uint8_t *)buffrec, 1);
 //  HAL_UART_Transmit_IT(&huart2, (uint8_t *)bufftr, 8);
