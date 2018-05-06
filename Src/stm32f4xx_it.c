@@ -50,6 +50,7 @@ extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
 extern volatile uint8_t Encoder_High_Z_flag;
+extern uint32_t g_encoder_cycle_count;
 
 /******************************************************************************/
 /*            Cortex-M4 Processor Interruption and Exception Handlers         */ 
@@ -134,7 +135,8 @@ void ADC_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
-  Encoder_High_Z_flag = SET;
+//  Encoder_High_Z_flag = SET;
+  g_encoder_cycle_count++;
 //  printf("cycle completed\n");
   /* USER CODE END EXTI9_5_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);

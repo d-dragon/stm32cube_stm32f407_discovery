@@ -51,6 +51,7 @@
 #include "motor_controller.h"
 #include "stm32f4xx_it.h"
 #include "stm32f4_discovery.h"
+#include "delay.h"
 
 /* USER CODE END Includes */
 
@@ -80,6 +81,7 @@ uint8_t rxbuff_idx = 0;
 //__IO ITStatus UartReady = RESET;
 __IO ITStatus recv_msg_flag = RESET; //declare volatile so that the variable could be changed in interrupt
 volatile uint8_t Encoder_High_Z_flag;
+uint32_t g_encoder_cycle_count = 0;
 
 MatLab_Message_TypeDef matlab_msg;
 PID_Algo_Params_TypeDef pid_params;
@@ -110,7 +112,7 @@ void SystemClock_Config(void);
 /* Private function prototypes -----------------------------------------------*/
 //void PWM_Set_Duty(uint16_t);
 void DMA_Init(void);
-void HandleMessage(MatLab_Message_TypeDef ml_msg);
+void Handle_Matlab_Message();
 void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len);
 //void Control_Motor(uint8_t *data, uint8_t len);
 void Get_Position();
@@ -211,7 +213,7 @@ int main(void)
   HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
   HAL_UART_Transmit_IT(&huart3, (uint8_t*)bufftr, 8);
 
-  BSP_LED_Toggle(LED6); //TX-blue
+//  BSP_LED_Toggle(LED6); //TX-blue
 //  Motor_Forward_Drive(100);
   printf("hello swv\n");
   Encoder_High_Z_flag = RESET;
@@ -223,42 +225,20 @@ int main(void)
 
 
 	  /**********************Debug encoder************************/
-//	  if (Encoder_High_Z_flag == SET) {
-//		  uint16_t pos = Read_Encoder_Position();
-//		  Encoder_Cycle_Completed_Handler();
-//		  printf("1 cycle counter value = %d\n", pos);
-//	  }
-
-	  uint16_t first_read = Read_Encoder_Position();
-	  uint16_t second_read = Read_Encoder_Position();
-	  printf("first_read = %d | second_read = %d\n", first_read, second_read);
+	  if (Encoder_High_Z_flag == SET) {
+		  Encoder_Cycle_Completed_Handler();
+	  }
 
 //	  HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_SET);
 //	  uint16_t enc_pos = Read_Encoder_Position();
 //	  printf("decoder value = %d\n", enc_pos);
-	  HAL_Delay(1000);
 	  /*************************************************************/
 
 	  if (recv_msg_flag == SET) {
-//		  BSP_LED_Toggle(LED4); // green
-		  printf("received message\n");
-		  uint8_t err;
-		  MatLab_Message_TypeDef msg;
-		  err = MatLab_Message_Parser(&msg, data, data_len);
-
-		  if (err == MSG_PARSER_SUCCESS) {
-			  HandleMessage(msg);
-		  } else {
-				MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &err, 1);
-
-		  }
-//		  MATLAB_Message_Handler(data, data_len);
-//		  HAL_UART_Transmit(&huart2, data, data_len, 5); //echo
-//		  HAL_UART_Transmit(&huart2, (uint8_t*)bufftr, 8, 5);
-
-		  recv_msg_flag = RESET;
-
+		  Handle_Matlab_Message();
 	  }
+	  Get_Position();
+	  delay_ms(3000);
 
   /* USER CODE END WHILE */
 
@@ -498,52 +478,78 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *UartHandle)
 }
 
 
-void HandleMessage(MatLab_Message_TypeDef ml_msg) {
-	switch (ml_msg.cmd_type) {
-	case MATLAB_CMD_SEND_PARAM:
-		/* TODO - Call SendParam function */
-		MatLab_Send_Param_Handler(ml_msg.payload.data, ml_msg.payload.len);
-		break;
-	case MATLAB_CMD_GET_POS:
-		/* TODO - Call GetPos function */
-		Get_Position();
-		break;
-	case MATLAB_CMD_READ_ADC:
-		Read_ADC();
-		break;
-	case MATLAB_CMD_RESTART:
-		/* TODO - Call Soft reset function */
-		break;
-	case MATLAB_CMD_SET_PWM:
-		Set_PWM(ml_msg.payload.data);
-		break;
+void Handle_Matlab_Message() {
+	// BSP_LED_Toggle(LED4); // green
+	printf("received message\n");
+	uint8_t err;
+	MatLab_Message_TypeDef msg;
+	err = MatLab_Message_Parser(&msg, data, data_len);
 
-		break;
-	default:
-		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_CMD_INVALID, 1);
+	if (err == MSG_PARSER_SUCCESS) {
+		//			  HandleMessage(msg);
+		switch (msg.cmd_type) {
+		case MATLAB_CMD_SEND_PARAM:
+			/* TODO - Call SendParam function */
+			MatLab_Send_Param_Handler(msg.payload.data, msg.payload.len);
+			break;
+		case MATLAB_CMD_GET_POS:
+			/* TODO - Call GetPos function */
+			Get_Position();
+			break;
+		case MATLAB_CMD_READ_ADC:
+			Read_ADC();
+			break;
+		case MATLAB_CMD_RESTART:
+			/* TODO - Call Soft reset function */
+			break;
+		case MATLAB_CMD_SET_PWM:
+			Set_PWM(msg.payload.data);
+			break;
+
+			break;
+		default:
+			MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_CMD_INVALID, 1);
+		}
+	} else {
+		MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &err, 1);
+
 	}
+	//		  MATLAB_Message_Handler(data, data_len);
+	//		  HAL_UART_Transmit(&huart2, data, data_len, 5); //echo
+	//		  HAL_UART_Transmit(&huart2, (uint8_t*)bufftr, 8, 5);
+
+	recv_msg_flag = RESET;
 }
 
 void Encoder_Cycle_Completed_Handler()
 {
-	Reset_Encoder_Counter();
+//	Reset_Encoder_Counter();
+	uint16_t pos = Read_Encoder_Position();
 	Encoder_High_Z_flag = RESET;
-//	  printf("cycle completed\n");
+	//printf("1 cycle counter value = %d\n", pos);
 }
 
 void Get_Position()
 {
 	uint16_t pos = 0;
+	uint8_t buff[3];
 
-//	uint8_t pin_d_1 = HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_1);
 
-//	uint16_t port_value = HAL_GPIO_ReadPort(GPIOD);
-//	port_value &= 0x00FF;
 	pos = Read_Encoder_Position();
+	buff[0] = (uint8_t)(pos & 0x00ff);
+	buff[1] = (uint8_t)(pos >> 8);
 //	printf("Decoder counter value=%d\n", pos);
-//	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pos, 1);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, buff, 2);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pin_d_1, 1);
 //	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
+
+	/* DEBUG  */
+	uint16_t first_read = Read_Encoder_Position();
+	uint16_t second_read = Read_Encoder_Position();
+	printf("first_read = %d | second_read = %d\n", first_read, second_read);
+	printf("cycle count = %d\n", g_encoder_cycle_count);
+
+	/******************************/
 }
 
 void Read_ADC()
