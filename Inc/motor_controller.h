@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include "stm32f4xx_hal.h"
 #include "arm_math.h"
+#include "io_expander.h"
 
 #define K_P_POS 			2
 #define K_I_POS 			6
@@ -31,12 +32,12 @@ typedef struct {
 
 extern PID_Algo_Params_TypeDef pid_algo_params;
 
-uint8_t Motor_Forward_Drive(uint16_t duty_cycle);
-uint8_t Motor_Reverse_Drive(uint16_t duty_cycle);
+void Motor_Forward_Drive(uint16_t duty_cycle);
+void Motor_Reverse_Drive(uint16_t duty_cycle);
 uint16_t Read_Encoder_Position();
 void Control_Motor(uint8_t *data, uint8_t len);
 void PWM_Set_Duty(uint16_t duty_cycle);
-void Reset_Encoder_Counter();
+void Reset_Encoder_Counter(I2C_HandleTypeDef *hi2cx);
 void Encoder_Cycle_Completed();
 
 #endif /* MOTOR_CONTROLLER_H_ */

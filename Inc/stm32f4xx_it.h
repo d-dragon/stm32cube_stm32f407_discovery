@@ -51,10 +51,10 @@ void SysTick_Handler(void);
 void DMA1_Stream1_IRQHandler(void);
 void DMA1_Stream5_IRQHandler(void);
 void ADC_IRQHandler(void);
+void EXTI9_5_IRQHandler(void);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
 void USART3_IRQHandler(void);
-void EXTI9_5_IRQHandler(void);
 void DMA2_Stream0_IRQHandler(void);
 void DMA2_Stream2_IRQHandler(void);
 
@@ -62,16 +62,16 @@ void DMA2_Stream2_IRQHandler(void);
 /* Type definitions ----------------------------------------------------------*/
 typedef struct
 {
-    volatile uint8_t  flag;     /* Timeout event flag */
-    uint16_t timer;             /* Timeout duration in msec */
-    uint16_t prevCNDTR;         /* Holds previous value of DMA_CNDTR */
+	volatile uint8_t  flag;     /* Timeout event flag */
+	uint16_t timer;             /* Timeout duration in msec */
+	uint16_t prevCNDTR;         /* Holds previous value of DMA_CNDTR */
 } DMA_Event_t;
 /* USER CODE END typedef */
+
 
 #ifdef __cplusplus
 }
 #endif
-
 #endif /* __STM32F4xx_IT_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

@@ -1,7 +1,8 @@
 /**
   ******************************************************************************
-  * File Name          : main.hpp
-  * Description        : This file contains the common defines of the application
+  * File Name          : I2C.h
+  * Description        : This file provides code for the configuration
+  *                      of the I2C instances.
   ******************************************************************************
   ** This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
@@ -36,76 +37,45 @@
   ******************************************************************************
   */
 /* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef __MAIN_H
-#define __MAIN_H
-  /* Includes ------------------------------------------------------------------*/
-#include "stm32f4xx_hal.h"
+#ifndef __i2c_H
+#define __i2c_H
+#ifdef __cplusplus
+ extern "C" {
+#endif
 
 /* Includes ------------------------------------------------------------------*/
+#include "stm32f4xx_hal.h"
+#include "main.h"
+
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
 
-/* Private define ------------------------------------------------------------*/
-
-#define DEBUG_LED1_Pin GPIO_PIN_3
-#define DEBUG_LED1_GPIO_Port GPIOE
-#define DEBUG_LED2_Pin GPIO_PIN_4
-#define DEBUG_LED2_GPIO_Port GPIOE
-#define ENCODER_COUNTER_OE_Pin GPIO_PIN_5
-#define ENCODER_COUNTER_OE_GPIO_Port GPIOE
-#define ENCODER_COUNTER_SEL_Pin GPIO_PIN_6
-#define ENCODER_COUNTER_SEL_GPIO_Port GPIOE
-#define PC14_OSC32_IN_Pin GPIO_PIN_14
-#define PC14_OSC32_IN_GPIO_Port GPIOC
-#define PC15_OSC32_OUT_Pin GPIO_PIN_15
-#define PC15_OSC32_OUT_GPIO_Port GPIOC
-#define PH0_OSC_IN_Pin GPIO_PIN_0
-#define PH0_OSC_IN_GPIO_Port GPIOH
-#define PH1_OSC_OUT_Pin GPIO_PIN_1
-#define PH1_OSC_OUT_GPIO_Port GPIOH
-#define BOOT1_Pin GPIO_PIN_2
-#define BOOT1_GPIO_Port GPIOB
-#define ENCODER_HIGH_Z_Pin GPIO_PIN_8
-#define ENCODER_HIGH_Z_GPIO_Port GPIOD
-#define ENCODER_HIGH_Z_EXTI_IRQn EXTI9_5_IRQn
-#define ENCODER_COUNTER_RESET_Pin GPIO_PIN_11
-#define ENCODER_COUNTER_RESET_GPIO_Port GPIOD
-#define MOTOR1_PWM1_Pin GPIO_PIN_6
-#define MOTOR1_PWM1_GPIO_Port GPIOC
-#define MOTOR1_PWM2_Pin GPIO_PIN_7
-#define MOTOR1_PWM2_GPIO_Port GPIOC
-#define MOTOR_nSLEEP_Pin GPIO_PIN_15
-#define MOTOR_nSLEEP_GPIO_Port GPIOA
-
-/* ########################## Assert Selection ############################## */
-/**
-  * @brief Uncomment the line below to expanse the "assert_param" macro in the 
-  *        HAL drivers code
-  */
-/* #define USE_FULL_ASSERT    1U */
+extern I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
 
-#ifdef __cplusplus
- extern "C" {
-#endif
-void _Error_Handler(char *, int);
+extern void _Error_Handler(char *, int);
 
-#define Error_Handler() _Error_Handler(__FILE__, __LINE__)
+void MX_I2C1_Init(void);
+
+/* USER CODE BEGIN Prototypes */
+
+/* USER CODE END Prototypes */
+
 #ifdef __cplusplus
 }
 #endif
+#endif /*__ i2c_H */
 
 /**
   * @}
-  */ 
+  */
 
 /**
   * @}
-*/ 
+  */
 
-#endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

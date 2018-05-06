@@ -10,14 +10,14 @@
 #include "tim.h"
 #include "delay.h"
 
-uint8_t Motor_Forward_Drive(uint16_t duty_cycle)
+void Motor_Forward_Drive(uint16_t duty_cycle)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
 }
 
-uint8_t Motor_Reverse_Drive(uint16_t duty_cycle)
+void Motor_Reverse_Drive(uint16_t duty_cycle)
 {
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
@@ -31,30 +31,36 @@ uint16_t Read_Encoder_Position()
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET); // OE = 0
 	/* Read High byte */
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_RESET); // SEL = 0
-	delay_ns(65);
-	high_byte = HAL_GPIO_ReadPort(GPIOD) & 0x00ff;
-
+	delay_ns(100);
+	high_byte = HAL_GPIO_ReadPort(GPIOD);
+	high_byte &= 0x00ff;
 
 	/* Read low byte */
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_SET); // SEL = 1
-	delay_ns(65);
-	low_byte = HAL_GPIO_ReadPort(GPIOD) & 0x00ff;
+	delay_ns(100);
+	low_byte = HAL_GPIO_ReadPort(GPIOD);
+	low_byte &= 0x00ff;
 
 	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET); // OE =1
 	pos = (high_byte << 8) | low_byte;
 	return pos;
 }
 
-void Reset_Encoder_Counter()
+void Reset_Encoder_Counter(I2C_HandleTypeDef *hi2cx)
 {
-	HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(ENCODER_COUNTER_RESET_GPIO_Port, ENCODER_COUNTER_RESET_Pin, GPIO_PIN_RESET);
 	delay_ns(28);
-	HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(ENCODER_COUNTER_RESET_GPIO_Port, ENCODER_COUNTER_RESET_Pin, GPIO_PIN_SET);
+
+//	HAL_Delay(1);
+//	HCTL_RST_HIGH(hi2cx);
+//	delay_ns(28);
+//	HCTL_RST_LOW(hi2cx);
 }
 
 void Encoder_Cycle_Completed()
 {
-	Reset_Encoder_Counter();
+//	Reset_Encoder_Counter(&hi2c1);
 }
 void Control_Motor(uint8_t *data, uint8_t len) {
 

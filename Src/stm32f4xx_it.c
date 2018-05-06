@@ -135,7 +135,7 @@ void ADC_IRQHandler(void)
 void EXTI9_5_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI9_5_IRQn 0 */
-//  Encoder_High_Z_flag = SET;
+  Encoder_High_Z_flag = SET;
   g_encoder_cycle_count++;
 //  printf("cycle completed\n");
   /* USER CODE END EXTI9_5_IRQn 0 */

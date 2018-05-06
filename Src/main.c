@@ -41,6 +41,7 @@
 #include "stm32f4xx_hal.h"
 #include "adc.h"
 #include "dma.h"
+#include "i2c.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -66,9 +67,12 @@ float32_t Input[SAMPLES];
 float32_t Output[FFT_SIZE];
 float32_t maxValue;
 uint32_t maxIndex;
+
 extern DMA_HandleTypeDef hdma_usart1_rx;
 extern DMA_HandleTypeDef hdma_usart2_rx;
 extern DMA_HandleTypeDef hdma_usart3_rx;
+I2C_HandleTypeDef hi2c1;
+
 /* Private variables ---------------------------------------------------------*/
 #define RECV_BUFF_SIZE 64
 #define SEND_BUFF_SIZE 64
@@ -119,6 +123,8 @@ void Get_Position();
 void Read_ADC();
 void Set_PWM(uint8_t *data);
 void Encoder_Cycle_Completed_Handler();
+void Reset_Encoder_Counter_Handler();
+
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
@@ -160,6 +166,7 @@ int main(void)
   MX_USART3_UART_Init();
   MX_TIM8_Init();
   MX_USART1_UART_Init();
+  MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
 
@@ -217,7 +224,8 @@ int main(void)
 //  Motor_Forward_Drive(100);
   printf("hello swv\n");
   Encoder_High_Z_flag = RESET;
-  Reset_Encoder_Counter();
+  Init_IO_Expander(&hi2c1);
+  Reset_Encoder_Counter(&hi2c1);
   while (1)
   {
 //	  arm_cmplx_mag_f32(Input, Output, FFT_SIZE);
@@ -226,7 +234,7 @@ int main(void)
 
 	  /**********************Debug encoder************************/
 	  if (Encoder_High_Z_flag == SET) {
-		  Encoder_Cycle_Completed_Handler();
+//		  Encoder_Cycle_Completed_Handler();
 	  }
 
 //	  HAL_GPIO_WritePin(Decoder_Reset_GPIO_Port, Decoder_Reset_Pin, GPIO_PIN_SET);
@@ -237,8 +245,7 @@ int main(void)
 	  if (recv_msg_flag == SET) {
 		  Handle_Matlab_Message();
 	  }
-	  Get_Position();
-	  delay_ms(3000);
+
 
   /* USER CODE END WHILE */
 
@@ -399,11 +406,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *UartHandle)
 {
   /* Set transmission flag: transfer complete */
 //  UartReady = SET;
-
-  /* Turn LED6 on: Transfer in transmission process is correct */
-//  BSP_LED_On(LED6);
-//  HAL_Delay(50);
-//  BSP_LED_Off(LED6);
 	__HAL_UART_FLUSH_DRREGISTER(&huart3);
 }
 
@@ -505,7 +507,8 @@ void Handle_Matlab_Message() {
 		case MATLAB_CMD_SET_PWM:
 			Set_PWM(msg.payload.data);
 			break;
-
+		case MATLAB_CMD_RESET_ENCODER_COUNTER:
+			Reset_Encoder_Counter_Handler();
 			break;
 		default:
 			MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_NAK_CMD_INVALID, 1);
@@ -523,31 +526,34 @@ void Handle_Matlab_Message() {
 
 void Encoder_Cycle_Completed_Handler()
 {
-//	Reset_Encoder_Counter();
+
 	uint16_t pos = Read_Encoder_Position();
+	printf("before reset position = %d\n", pos);
+	Reset_Encoder_Counter(&hi2c1);
 	Encoder_High_Z_flag = RESET;
-	//printf("1 cycle counter value = %d\n", pos);
+	pos = Read_Encoder_Position();
+	printf("after reset position = %d\n", pos);
 }
 
 void Get_Position()
 {
 	uint16_t pos = 0;
-	uint8_t buff[3];
+	uint8_t buff[2];
 
 
 	pos = Read_Encoder_Position();
 	buff[0] = (uint8_t)(pos & 0x00ff);
 	buff[1] = (uint8_t)(pos >> 8);
-//	printf("Decoder counter value=%d\n", pos);
+
 	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, buff, 2);
-//	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, &pin_d_1, 1);
-//	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, pin_values, 8);
+
+	printf("Decoder counter value=%d\n", pos);
 
 	/* DEBUG  */
-	uint16_t first_read = Read_Encoder_Position();
-	uint16_t second_read = Read_Encoder_Position();
-	printf("first_read = %d | second_read = %d\n", first_read, second_read);
-	printf("cycle count = %d\n", g_encoder_cycle_count);
+//	uint16_t first_read = Read_Encoder_Position();
+//	uint16_t second_read = Read_Encoder_Position();
+//	printf("first_read = %d | second_read = %d\n", first_read, second_read);
+//	printf("cycle count = %d\n", g_encoder_cycle_count);
 
 	/******************************/
 }
@@ -578,6 +584,12 @@ void Set_PWM(uint8_t *data)
 {
 	Motor_Forward_Drive((uint16_t) data[0]);
 	PWM_Set_Duty((uint16_t) data[0]);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
+}
+
+void Reset_Encoder_Counter_Handler()
+{
+	Reset_Encoder_Counter(&hi2c1);
 	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
 }
 
