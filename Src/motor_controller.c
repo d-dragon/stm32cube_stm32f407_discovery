@@ -12,14 +12,14 @@
 
 void Motor_Forward_Drive(uint16_t duty_cycle)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MOTOR_nSLEEP_GPIO_Port, MOTOR_nSLEEP_Pin, GPIO_PIN_SET);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, duty_cycle);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, 0);
 }
 
 void Motor_Reverse_Drive(uint16_t duty_cycle)
 {
-	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(MOTOR_nSLEEP_GPIO_Port, MOTOR_nSLEEP_Pin, GPIO_PIN_SET);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_1, 0);
 	__HAL_TIM_SET_COMPARE(&htim8, TIM_CHANNEL_2, duty_cycle);
 }
@@ -28,20 +28,20 @@ uint16_t Read_Encoder_Position()
 {
 	uint16_t pos, high_byte, low_byte;
 
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_RESET); // OE = 0
+	HAL_GPIO_WritePin(ENCODER_COUNTER_OE_GPIO_Port, ENCODER_COUNTER_OE_Pin, GPIO_PIN_RESET); // OE = 0
 	/* Read High byte */
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_RESET); // SEL = 0
+	HAL_GPIO_WritePin(ENCODER_COUNTER_SEL_GPIO_Port, ENCODER_COUNTER_SEL_Pin, GPIO_PIN_RESET); // SEL = 0
 	delay_ns(100);
 	high_byte = HAL_GPIO_ReadPort(GPIOD);
 	high_byte &= 0x00ff;
 
 	/* Read low byte */
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_6, GPIO_PIN_SET); // SEL = 1
+	HAL_GPIO_WritePin(ENCODER_COUNTER_SEL_GPIO_Port, ENCODER_COUNTER_SEL_Pin, GPIO_PIN_SET); // SEL = 1
 	delay_ns(100);
 	low_byte = HAL_GPIO_ReadPort(GPIOD);
 	low_byte &= 0x00ff;
 
-	HAL_GPIO_WritePin(GPIOE, GPIO_PIN_5, GPIO_PIN_SET); // OE =1
+	HAL_GPIO_WritePin(ENCODER_COUNTER_OE_GPIO_Port, ENCODER_COUNTER_OE_Pin, GPIO_PIN_SET); // OE =1
 	pos = (high_byte << 8) | low_byte;
 	return pos;
 }

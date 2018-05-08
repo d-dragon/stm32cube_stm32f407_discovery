@@ -216,8 +216,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_3, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_4, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(DEBUG_LED1_GPIO_Port, DEBUG_LED1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(DEBUG_LED2_GPIO_Port, DEBUG_LED2_Pin, GPIO_PIN_SET);
   HAL_UART_Transmit_IT(&huart3, (uint8_t*)bufftr, 8);
 
 //  BSP_LED_Toggle(LED6); //TX-blue
@@ -545,7 +545,7 @@ void Get_Position()
 	buff[0] = (uint8_t)(pos & 0x00ff);
 	buff[1] = (uint8_t)(pos >> 8);
 
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, buff, 2);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_GET_POS, buff, 2);
 
 	printf("Decoder counter value=%d\n", pos);
 
@@ -577,20 +577,20 @@ void Read_ADC()
 
 	HAL_ADC_Start_DMA(&hadc1, (uint32_t*) adc_value, 3);
 
-	MatLab_Send_Response((uint8_t) MATLAB_CMD_REPLY, buff, 6);
+	MatLab_Send_Response((uint8_t) MATLAB_CMD_READ_ADC, buff, 6);
 }
 
 void Set_PWM(uint8_t *data)
 {
 	Motor_Forward_Drive((uint16_t) data[0]);
 	PWM_Set_Duty((uint16_t) data[0]);
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_SET_PWM, (uint8_t *)MSG_REPLY_ACK, 1);
 }
 
 void Reset_Encoder_Counter_Handler()
 {
 	Reset_Encoder_Counter(&hi2c1);
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_RESET_ENCODER_COUNTER, (uint8_t *)MSG_REPLY_ACK, 1);
 }
 
 void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len)
@@ -600,7 +600,7 @@ void MatLab_Send_Param_Handler(uint8_t *data, uint8_t len)
 
 	/* Respond result by calling Send_Response_Message*/
 
-	MatLab_Send_Response((uint8_t)MATLAB_CMD_REPLY, (uint8_t *)MSG_REPLY_ACK, 1);
+	MatLab_Send_Response((uint8_t)MATLAB_CMD_SEND_PARAM, (uint8_t *)MSG_REPLY_ACK, 1);
 }
 
 
